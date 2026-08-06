@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
-import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink } from 'lucide-react';
+import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 
 interface AILessonGeneratorModalProps {
@@ -27,6 +27,36 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
   const [showAnswers, setShowAnswers] = useState<boolean>(false);
   const [fiveStepPlan, setFiveStepPlan] = useState<FiveStepLessonPlan | null>(null);
   const [worksheet, setWorksheet] = useState<StudentWorksheet | null>(null);
+  const [imageGenerating, setImageGenerating] = useState<boolean>(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  const handleRegenerateImage = async () => {
+    if (!lesson) return;
+    setImageGenerating(true);
+    setImageError(null);
+    try {
+      const res = await fetch('/api/gemini/generate-activity-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonTitle: lesson.lessonTitle,
+          subject: lesson.subject,
+          grade: lesson.grade,
+          customPrompt: customPrompt || '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.imageUrl) {
+        setFiveStepPlan((prev) => (prev ? { ...prev, activityImageUrl: data.imageUrl } : null));
+      } else {
+        setImageError(data.error || 'មិនអាចបង្កើតរូបភាពបានទេ');
+      }
+    } catch (err: any) {
+      setImageError(err?.message || 'កំហុសបណ្តាញ');
+    } finally {
+      setImageGenerating(false);
+    }
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -764,6 +794,64 @@ ${currentAppUrl}`;
                 <div className="pt-2 text-slate-700">
                   <span className="font-bold text-slate-900">សម្ភារឧបទេស៖</span> {fiveStepPlan.teachingAids.join(', ')}
                 </div>
+              </div>
+
+              {/* Classroom Activity Illustration Banner */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 avoid-break">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4.5 h-4.5 text-purple-600" />
+                    <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                      រូបភាពបង្ហាញពីសកម្មភាពគំរូក្នុងថ្នាក់រៀន (Sample Activity Illustration)
+                    </h4>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleRegenerateImage}
+                    disabled={imageGenerating}
+                    className="no-print flex items-center gap-1.5 px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-900 text-[11px] font-bold rounded-lg border border-purple-200 transition-all cursor-pointer disabled:opacity-50"
+                    title="បង្កើតរូបភាពសកម្មភាពថ្មីដោយប្រើ Image Generation AI"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${imageGenerating ? 'animate-spin' : ''}`} />
+                    <span>{imageGenerating ? 'កំពុងបង្កើត...' : 'បង្កើតរូបភាពថ្មី (Generate Image)'}</span>
+                  </button>
+                </div>
+
+                {imageError && (
+                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
+                    {imageError}
+                  </div>
+                )}
+
+                {fiveStepPlan.activityImageUrl ? (
+                  <div className="space-y-1.5">
+                    <div className="relative rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-slate-900">
+                      <img
+                        src={fiveStepPlan.activityImageUrl}
+                        alt={`សកម្មភាពគំរូ៖ ${fiveStepPlan.title}`}
+                        referrerPolicy="no-referrer"
+                        className="w-full max-h-[380px] object-cover mx-auto"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500 text-center font-medium">
+                      🎨 រូបភាពសកម្មភាពគំរូក្នុងថ្នាក់រៀនស្របតាមមេរៀន «{fiveStepPlan.title}» បង្កើតដោយ Image Generation AI
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-6 bg-white border border-dashed border-slate-300 rounded-xl text-center space-y-2">
+                    <p className="text-xs text-slate-600 font-medium">មិនទាន់មានរូបភាពសកម្មភាពគំរូសម្រាប់មេរៀននេះនៅឡើយទេ</p>
+                    <button
+                      type="button"
+                      onClick={handleRegenerateImage}
+                      disabled={imageGenerating}
+                      className="no-print inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>បង្កើតរូបភាពសកម្មភាពគំរូ (Generate Activity Image)</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* 5 Steps Accordion/Table */}

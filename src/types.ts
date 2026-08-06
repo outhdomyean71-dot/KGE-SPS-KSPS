@@ -53,6 +53,8 @@ export interface FiveStepLessonPlan {
     studentActivities: string;
   }[];
   pedagogicalAdvice?: string;
+  activityImageUrl?: string;
+  imagePrompt?: string;
 }
 
 export interface StudentQuestion {

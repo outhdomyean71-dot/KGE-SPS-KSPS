@@ -144,7 +144,7 @@ export const MoEYSHeader: React.FC<HeaderProps> = ({
   const currentMinMonth = selectedMonths.length > 0 ? Math.min(...selectedMonths) : 1;
   const currentMaxMonth = selectedMonths.length > 0 ? Math.max(...selectedMonths) : 10;
   return (
-    <header className="bg-white border-b border-amber-200/80 shadow-sm sticky top-0 z-30">
+    <header className="bg-white border-b border-amber-200/80 shadow-sm sticky top-0 z-30 print:hidden">
       {/* Official Sovannaphumi School Header Banner */}
       <div className="bg-gradient-to-r from-[#b12c1b] via-[#d85822] to-[#ea9c28] text-white py-2.5 px-4 shadow-md">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">

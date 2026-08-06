@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LessonPlan, SchoolInfo, GradeLevel, Semester, SubjectType } from '../types';
 import { Printer, Download, ArrowLeft, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
+import { printDocument } from '../utils/exportUtils';
 
 interface PrintPlannerViewProps {
   lessons: LessonPlan[];
@@ -33,7 +34,7 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(true);
 
   const handlePrint = () => {
-    window.print();
+    printDocument('printable-annual-planner', `ផែនការបង្រៀនប្រចាំឆ្នាំ - ${selectedGrade}`);
   };
 
   const handleResetToggles = () => {
@@ -181,7 +182,7 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
       )}
 
       {/* Official Print Preview Container */}
-      <div className="bg-white p-8 md:p-12 shadow-lg rounded-xl border border-slate-200 print:shadow-none print:border-none print:p-0">
+      <div id="printable-annual-planner" className="bg-white p-8 md:p-12 shadow-lg rounded-xl border border-slate-200 print:shadow-none print:border-none print:p-0">
         
         {/* National Header Block */}
         <div className="text-center space-y-1 mb-8">

@@ -194,6 +194,34 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
 
       const jsonText = response.text || '{}';
       const result = parseAIJsonResponse(jsonText);
+
+      // Generate visual activity illustration image for the lesson plan
+      try {
+        const imagePrompt = `A high quality, bright educational illustration of young Cambodian primary school students (${grade || 'Grade 1'}) actively participating in a ${subject || 'General'} classroom lesson about "${lessonTitle || 'Interactive Learning'}". Asian children sitting at school desks, friendly teacher explaining at whiteboard, warm cheerful classroom atmosphere, clean colorful vector digital art style, high resolution.`;
+        
+        try {
+          const imgResponse = await ai.models.generateImages({
+            model: 'imagen-3.0-generate-002',
+            prompt: imagePrompt,
+            config: {
+              numberOfImages: 1,
+              outputMimeType: 'image/jpeg',
+              aspectRatio: '16:9',
+            },
+          });
+          const bytes = imgResponse.generatedImages?.[0]?.image?.imageBytes;
+          if (bytes) {
+            result.activityImageUrl = `data:image/jpeg;base64,${bytes}`;
+          }
+        } catch (e) {
+          // Fallback to pollinations AI image stream
+          const encodedPrompt = encodeURIComponent(`Cambodian primary school children in classroom learning ${subject || ''} ${lessonTitle || ''}, vibrant educational vector illustration, high quality`);
+          result.activityImageUrl = `https://pollinations.ai/prompt/${encodedPrompt}?width=800&height=450&seed=${Math.floor(Math.random() * 100000)}&nologo=true`;
+        }
+      } catch (imgErr) {
+        console.warn('Could not attach image to lesson plan:', imgErr);
+      }
+
       res.json({ success: true, lessonPlan: result });
     } catch (error: any) {
       console.error('Error generating lesson plan:', error);
@@ -290,6 +318,55 @@ ${customPrompt ? `- សំណូមពរបន្ថែមពីគ្រូប
       res.status(500).json({
         success: false,
         error: error.message || 'មិនអាចបង្កើតសន្លឹកកិច្ចការបានទេ សូមព្យាយាមម្ដងទៀត',
+      });
+    }
+  });
+
+  // API Endpoint: Generate Classroom Activity Illustration Image
+  app.post('/api/gemini/generate-activity-image', async (req, res) => {
+    try {
+      const { lessonTitle, subject, grade, customPrompt } = req.body;
+
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({
+          success: false,
+          error: 'GEMINI_API_KEY environment variable is missing on the server.',
+        });
+      }
+
+      const prompt = customPrompt || 
+        `A high quality, bright educational illustration of young Cambodian primary school students (${grade || 'Grade 1'}) actively participating in a ${subject || 'General'} classroom lesson about "${lessonTitle || 'Interactive Learning'}". Asian children sitting at school desks, friendly Cambodian teacher explaining at the whiteboard, warm cheerful classroom atmosphere, clean colorful vector digital art style, high resolution.`;
+
+      try {
+        const response = await ai.models.generateImages({
+          model: 'imagen-3.0-generate-002',
+          prompt: prompt,
+          config: {
+            numberOfImages: 1,
+            outputMimeType: 'image/jpeg',
+            aspectRatio: '16:9',
+          },
+        });
+
+        const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+        if (imageBytes) {
+          const imageUrl = `data:image/jpeg;base64,${imageBytes}`;
+          return res.json({ success: true, imageUrl, prompt });
+        }
+      } catch (imagenErr: any) {
+        console.warn('Imagen generateImages error, falling back to pollinations AI image stream:', imagenErr?.message || imagenErr);
+      }
+
+      // Fallback AI image generator stream if Imagen rate-limited or unavailable
+      const fallbackPrompt = encodeURIComponent(`Cambodian primary school children in classroom learning ${subject || 'general'} ${lessonTitle || 'lesson'}, vibrant educational vector illustration, high quality`);
+      const fallbackUrl = `https://pollinations.ai/prompt/${fallbackPrompt}?width=800&height=450&seed=${Math.floor(Math.random() * 100000)}&nologo=true`;
+
+      res.json({ success: true, imageUrl: fallbackUrl, prompt });
+    } catch (error: any) {
+      console.error('Error generating activity image:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'មិនអាចបង្កើតរូបភាពសកម្មភាពបានទេ',
       });
     }
   });
