@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { LessonPlan, SchoolInfo, GradeLevel, Semester, SubjectType } from '../types';
-import { Printer, Download, ArrowLeft, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Printer, Download, ArrowLeft, SlidersHorizontal, RotateCcw, FileCode } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
-import { printDocument } from '../utils/exportUtils';
+import { printDocument, downloadElementAsHTML } from '../utils/exportUtils';
 
 interface PrintPlannerViewProps {
   lessons: LessonPlan[];
@@ -37,6 +37,10 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
     printDocument('printable-annual-planner', `ផែនការបង្រៀនប្រចាំឆ្នាំ - ${selectedGrade}`);
   };
 
+  const handleDownloadHTML = () => {
+    downloadElementAsHTML('printable-annual-planner', `ផែនការបង្រៀនប្រចាំឆ្នាំ - ${selectedGrade}`);
+  };
+
   const handleResetToggles = () => {
     setShowLogo(true);
     setShowObjectives(true);
@@ -58,7 +62,7 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
           ត្រឡប់ទៅតារាងវិញ
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsConfigOpen(!isConfigOpen)}
             className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
@@ -69,6 +73,15 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
           >
             <SlidersHorizontal className="w-4 h-4 text-amber-700" />
             <span>កែតម្រូវផ្នែកបោះពុម្ព (Config)</span>
+          </button>
+
+          <button
+            onClick={handleDownloadHTML}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all cursor-pointer"
+            title="ទាញយកឯកសារផែនការបង្រៀនជាទម្រង់ HTML"
+          >
+            <FileCode className="w-4 h-4" />
+            ទាញយកជា HTML
           </button>
 
           <button

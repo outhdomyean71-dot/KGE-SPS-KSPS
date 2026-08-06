@@ -783,3 +783,97 @@ export function printDocument(elementId: string, docTitle: string) {
   `);
   printWindow.document.close();
 }
+
+/**
+ * Export any HTML element (e.g. Printable Annual Planner) as a standalone downloadable HTML file
+ */
+export function downloadElementAsHTML(elementId: string, docTitle: string) {
+  const contentEl = document.getElementById(elementId);
+  if (!contentEl) return;
+
+  const clonedContent = contentEl.cloneNode(true) as HTMLElement;
+  const buttonsAndControls = clonedContent.querySelectorAll('button, input, select, .no-print');
+  buttonsAndControls.forEach((el) => el.remove());
+
+  const safeTitle = docTitle.replace(/[^\w\s\u1780-\u17FF]/g, '_') || 'Planner';
+  const fileName = `${safeTitle}.html`;
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${docTitle}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Moul&display=swap');
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: 'Kantumruy Pro', 'Khmer OS Battambang', system-ui, -apple-system, sans-serif;
+      color: #0f172a;
+      background: #f8fafc;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .print-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .no-print, button, input, select {
+      display: none !important;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #f1f5f9 !important;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .signature-block, tr, .avoid-break {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    @media print {
+      body { padding: 0; background: #ffffff; }
+      .print-container { box-shadow: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-container">
+    ${clonedContent.innerHTML}
+  </div>
+</body>
+</html>`;
+
+  downloadFile(fileName, htmlContent, 'text/html');
+}
+
