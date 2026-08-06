@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, SchoolInfo } from '../types';
-import { X, Sparkles, CheckCircle2, Circle, Edit2, Save, BookOpen, Clock, Layers, Printer, ArrowLeft, School, FileText } from 'lucide-react';
+import { X, Sparkles, CheckCircle2, Circle, Edit2, Save, BookOpen, Clock, Layers, Printer, ArrowLeft, School, FileText, Check, RefreshCw, CloudCheck } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
 
 interface LessonDetailModalProps {
@@ -25,11 +25,47 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
   const [notes, setNotes] = useState<string>(lesson?.customNotes || '');
   const [isEditingNotes, setIsEditingNotes] = useState<boolean>(false);
   const [isPrintPreview, setIsPrintPreview] = useState<boolean>(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+  const lastSavedNotesRef = useRef<string>(lesson?.customNotes || '');
+
+  // Keep local notes state updated when lesson prop changes
+  useEffect(() => {
+    if (lesson) {
+      setNotes(lesson.customNotes || '');
+      lastSavedNotesRef.current = lesson.customNotes || '';
+      setSaveStatus('idle');
+    }
+  }, [lesson?.id, lesson?.customNotes]);
+
+  // Debounced auto-save effect
+  useEffect(() => {
+    if (!lesson || !isOpen) return;
+
+    if (notes === lastSavedNotesRef.current) return;
+
+    setSaveStatus('saving');
+    const timer = setTimeout(() => {
+      onSaveNotes(lesson.id, notes);
+      lastSavedNotesRef.current = notes;
+      setSaveStatus('saved');
+
+      const statusTimer = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2500);
+
+      return () => clearTimeout(statusTimer);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [notes, lesson?.id, isOpen, onSaveNotes]);
 
   if (!isOpen || !lesson) return null;
 
   const handleSave = () => {
     onSaveNotes(lesson.id, notes);
+    lastSavedNotesRef.current = notes;
+    setSaveStatus('saved');
     setIsEditingNotes(false);
   };
 
@@ -309,9 +345,22 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
           {/* Teacher Custom Notes Section */}
           <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-amber-950 text-xs">
-                កំណត់ចំណាំផ្ទាល់ខ្លួនរបស់គ្រូ (Teacher Notes)៖
-              </label>
+              <div className="flex items-center gap-2">
+                <label className="font-bold text-amber-950 text-xs">
+                  កំណត់ចំណាំផ្ទាល់ខ្លួនរបស់គ្រូ (Teacher Notes)៖
+                </label>
+                {saveStatus === 'saving' && (
+                  <span className="text-[11px] font-bold text-amber-700 animate-pulse flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3 animate-spin text-amber-600" /> កំពុងរក្សាទុក...
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600" /> បានរក្សាទុកស្វ័យប្រវត្តិ ☁️
+                  </span>
+                )}
+              </div>
+
               {!isEditingNotes ? (
                 <button
                   onClick={() => setIsEditingNotes(true)}
@@ -324,7 +373,7 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
                   onClick={handleSave}
                   className="flex items-center gap-1 text-xs text-emerald-800 font-bold hover:underline cursor-pointer"
                 >
-                  <Save className="w-3 h-3" /> រក្សាទុក
+                  <Save className="w-3 h-3" /> បញ្ចប់កែប្រែ
                 </button>
               )}
             </div>
@@ -335,11 +384,15 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="ឧ. សិស្សរៀនយឺត ២នាក់ត្រូវណែនាំបន្ថែម, ត្រូវរៀបចំប័ណ្ណរូបភាពបន្ថែម..."
                 rows={3}
-                className="w-full p-2.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full p-2.5 bg-white border border-amber-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-2xs"
               />
             ) : (
-              <p className="text-slate-700 italic">
-                {lesson.customNotes || 'មិនទាន់មានកំណត់ចំណាំឡើយ។ ចុច «កែប្រែ» ដើម្បីបន្ថែម...'}
+              <p
+                onClick={() => setIsEditingNotes(true)}
+                className="text-slate-700 italic cursor-pointer hover:bg-amber-100/50 p-2 rounded-lg transition-colors"
+                title="ចុចដើម្បីកែប្រែ"
+              >
+                {notes || 'មិនទាន់មានកំណត់ចំណាំឡើយ។ ចុច «កែប្រែ» ដើម្បីបន្ថែម...'}
               </p>
             )}
           </div>

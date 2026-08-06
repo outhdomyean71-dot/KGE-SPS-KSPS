@@ -5,21 +5,25 @@ import { Sparkles, CheckCircle2, Circle, Eye, Edit3, BookOpen, Clock, FileText }
 interface CurriculumTableProps {
   lessons: LessonPlan[];
   selectedGrade: GradeLevel;
-  selectedSemester: Semester | 'ALL';
-  selectedSubject: SubjectType | 'ALL';
+  selectedSemester: Semester | 'ALL' | 'CUSTOM';
+  selectedSubjects: SubjectType[];
+  selectedMonths: number[];
   onSelectLessonForAI: (lesson: LessonPlan) => void;
   onOpenLessonDetail: (lesson: LessonPlan) => void;
   onToggleComplete: (id: string) => void;
+  onResetFilters?: () => void;
 }
 
 export const CurriculumTable: React.FC<CurriculumTableProps> = ({
   lessons,
   selectedGrade,
   selectedSemester,
-  selectedSubject,
+  selectedSubjects,
+  selectedMonths,
   onSelectLessonForAI,
   onOpenLessonDetail,
   onToggleComplete,
+  onResetFilters,
 }) => {
   // Helper for Subject Badges
   const getSubjectBadge = (subject: SubjectType) => {
@@ -41,17 +45,30 @@ export const CurriculumTable: React.FC<CurriculumTableProps> = ({
 
   if (lessons.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 my-6 shadow-sm">
-        <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-        <h3 className="text-base font-bold text-slate-700">មិនមានមេរៀនត្រូវគ្នានឹងការស្វែងរកឡើយ</h3>
-        <p className="text-xs text-slate-500 mt-1">សូមសាកល្បងផ្លាស់ប្តូរការតម្រងមុខវិជ្ជា ឆមាស ឬពាក្យគន្លឹះស្វែងរក។</p>
+      <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 my-6 shadow-sm max-w-2xl mx-auto space-y-4">
+        <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+          <BookOpen className="w-7 h-7" />
+        </div>
+        <div>
+          <h3 className="text-base font-bold text-slate-800">មិនមានមេរៀនត្រូវគ្នានឹងការស្វែងរកឡើយ</h3>
+          <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            សូមសាកល្បងសម្រួលមុខវិជ្ជាជ្រើសរើស ({selectedSubjects.length} មុខវិជ្ជា) ឬ ចន្លោះខែសិក្សា ({selectedMonths.length} ខែ)។
+          </p>
+        </div>
+        {onResetFilters && (
+          <button
+            onClick={onResetFilters}
+            className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer inline-flex items-center gap-1.5"
+          >
+            កំណត់ការតម្រងឡើងវិញ ( reset filters )
+          </button>
+        )}
       </div>
     );
   }
 
-  // Group lessons by Semester for clear table separation if ALL or specific
-  const semestersToDisplay: Semester[] = 
-    selectedSemester === 'ALL' ? ['ឆមាសទី១', 'ឆមាសទី២'] : [selectedSemester];
+  // Group lessons by Semester for clear table separation
+  const semestersToDisplay: Semester[] = ['ឆមាសទី១', 'ឆមាសទី២'];
 
   return (
     <div className="space-y-8 my-6">

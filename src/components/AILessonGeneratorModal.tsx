@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
-import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2 } from 'lucide-react';
+import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 
 interface AILessonGeneratorModalProps {
@@ -21,10 +21,55 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   
   const [customPrompt, setCustomPrompt] = useState<string>('');
+  const [teachingStyle, setTeachingStyle] = useState<string>('interactive');
   const [fiveStepPlan, setFiveStepPlan] = useState<FiveStepLessonPlan | null>(null);
   const [worksheet, setWorksheet] = useState<StudentWorksheet | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Teaching style presets definition
+  const teachingStyles = [
+    {
+      id: 'interactive',
+      label: 'អន្តរកម្ម & សកម្ម',
+      desc: 'Interactive & Student-Centered',
+      icon: Target,
+      color: 'border-purple-300 bg-purple-50 text-purple-900 active:bg-purple-100',
+      activeColor: 'bg-purple-700 text-white border-purple-800 shadow-xs',
+    },
+    {
+      id: 'group',
+      label: 'ការងារក្រុម & ពិភាក្សា',
+      desc: 'Group Activity & Peer Discussion',
+      icon: Users,
+      color: 'border-blue-300 bg-blue-50 text-blue-900 active:bg-blue-100',
+      activeColor: 'bg-blue-700 text-white border-blue-800 shadow-xs',
+    },
+    {
+      id: 'inquiry',
+      label: 'ស៊ើបសួរ & ដោះស្រាយ',
+      desc: 'Inquiry-Based & Problem Solving',
+      icon: Compass,
+      color: 'border-emerald-300 bg-emerald-50 text-emerald-900 active:bg-emerald-100',
+      activeColor: 'bg-emerald-700 text-white border-emerald-800 shadow-xs',
+    },
+    {
+      id: 'lecture',
+      label: 'ពន្យល់ & បង្ហាញផ្ទាល់',
+      desc: 'Lecture & Direct Instruction',
+      icon: GraduationCap,
+      color: 'border-amber-300 bg-amber-50 text-amber-900 active:bg-amber-100',
+      activeColor: 'bg-amber-700 text-white border-amber-800 shadow-xs',
+    },
+    {
+      id: 'gamified',
+      label: 'ល្បែងសិក្សា & កម្សាន្ត',
+      desc: 'Gamified & Play-Based',
+      icon: Gamepad2,
+      color: 'border-rose-300 bg-rose-50 text-rose-900 active:bg-rose-100',
+      activeColor: 'bg-rose-700 text-white border-rose-800 shadow-xs',
+    },
+  ];
 
   // Auto-generate lesson plan when modal opens for a selected lesson
   useEffect(() => {
@@ -49,10 +94,19 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
           month: lesson.monthName,
           objectives: lesson.objectives,
           promptText: customPrompt,
+          teachingStyle: teachingStyle,
         }),
       });
 
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text && text.length < 200 ? text : `មានបញ្ហាតភ្ជាប់ទៅកាន់ Server (Status: ${res.status})`);
+      }
+
       if (data.success && data.lessonPlan) {
         setFiveStepPlan(data.lessonPlan);
       } else {
@@ -81,7 +135,15 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
         }),
       });
 
-      const data = await res.json();
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text && text.length < 200 ? text : `មានបញ្ហាតភ្ជាប់ទៅកាន់ Server (Status: ${res.status})`);
+      }
+
       if (data.success && data.data) {
         setWorksheet(data.data);
       } else {
@@ -433,28 +495,72 @@ ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
             </div>
           )}
           
-          {/* Custom Prompt Box */}
-          <div className="bg-purple-50/60 p-3.5 rounded-xl border border-purple-200 flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            <div className="flex-1">
-              <label className="text-xs font-bold text-purple-900 block mb-1">
-                បន្ថែមសំណូមពរពិសេសសម្រាប់គ្រូ (Custom Prompt)៖
-              </label>
-              <input
-                type="text"
-                placeholder="ឧ. បន្ថែមល្បែងសិក្សាសម្រាប់សិស្សរៀនយឺត, បន្ថែមលំហាត់ក្រុមប្រកួតប្រជែង..."
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                className="w-full px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
+          {/* Custom Prompt & Teaching Style Selector Box */}
+          <div className="bg-gradient-to-br from-purple-50/80 via-indigo-50/40 to-sky-50/50 p-4 rounded-xl border border-purple-200/80 space-y-3 shadow-xs">
+            
+            {/* Teaching Style Selector */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                  <Compass className="w-4 h-4 text-purple-700" />
+                  <span>ជ្រើសរើសរចនាប័ទ្ម/វិធីសាស្ត្របង្រៀន (Teaching Style)៖</span>
+                </label>
+                <span className="text-[11px] text-purple-700 font-medium hidden sm:inline">
+                  កំណត់ទម្រង់សកម្មភាពគ្រូ-សិស្សសម្រាប់ Gemini AI
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                {teachingStyles.map((style) => {
+                  const StyleIcon = style.icon;
+                  const isSelected = teachingStyle === style.id;
+                  return (
+                    <button
+                      key={style.id}
+                      type="button"
+                      onClick={() => setTeachingStyle(style.id)}
+                      className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? style.activeColor
+                          : `${style.color} hover:bg-white hover:border-purple-300`
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <StyleIcon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : ''}`} />
+                        <span className="text-xs font-bold leading-tight">{style.label}</span>
+                      </div>
+                      <span className={`text-[10px] leading-tight opacity-80 ${isSelected ? 'text-purple-100' : 'text-slate-600'}`}>
+                        {style.desc}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <button
-              onClick={activeTab === 'plan' ? handleGenerateLessonPlan : handleGenerateWorksheet}
-              disabled={loading}
-              className="flex items-center justify-center gap-1.5 px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer shrink-0 disabled:opacity-50 self-end md:self-auto"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>បង្កើតឡើងវិញ</span>
-            </button>
+
+            {/* Prompt Input & Generate Button */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 pt-1">
+              <div className="flex-1">
+                <label className="text-[11px] font-bold text-purple-900 block mb-1">
+                  បន្ថែមសំណូមពរពិសេស (Custom Prompt Note)៖
+                </label>
+                <input
+                  type="text"
+                  placeholder="ឧ. បន្ថែមល្បែងសិក្សាសម្រាប់សិស្សរៀនយឺត, បន្ថែមលំហាត់ប្រកួតប្រជែង..."
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-white border border-purple-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs"
+                />
+              </div>
+              <button
+                onClick={activeTab === 'plan' ? handleGenerateLessonPlan : handleGenerateWorksheet}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer shrink-0 disabled:opacity-50 self-end md:self-auto"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>បង្កើតកិច្ចតែងការឡើងវិញ</span>
+              </button>
+            </div>
           </div>
 
           {/* Loading Indicator */}

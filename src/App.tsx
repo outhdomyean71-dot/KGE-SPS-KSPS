@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { LessonPlan, SchoolInfo, GradeLevel, Semester, SubjectType } from './types';
 import { getSavedCurriculum, saveCurriculum, getSavedSchoolInfo, saveSchoolInfo } from './data/storage';
 import { MoEYSHeader } from './components/MoEYSHeader';
@@ -11,15 +11,32 @@ import { SchoolInfoModal } from './components/SchoolInfoModal';
 import { AddLessonModal } from './components/AddLessonModal';
 import { WeeklyTimetableModal } from './components/WeeklyTimetableModal';
 import { SlowLearnersModal } from './components/SlowLearnersModal';
-import { BookOpen, Sparkles, CheckCircle2, Clock, Calendar, Download, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { CloudSyncModal } from './components/CloudSyncModal';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import {
+  initAuth,
+  syncLessonToCloud,
+  syncAllLessonsToCloud,
+  listenToCloudLessons,
+  syncSchoolInfoToCloud,
+  listenToCloudSchoolInfo
+} from './lib/firebase';
+import { BookOpen, Sparkles, CheckCircle2, Clock, Calendar, Download, AlertCircle, CheckCircle, X, Keyboard } from 'lucide-react';
 
 export default function App() {
   const [lessons, setLessons] = useState<LessonPlan[]>(getSavedCurriculum);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>(getSavedSchoolInfo);
 
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>('ថ្នាក់ទី១');
-  const [selectedSemester, setSelectedSemester] = useState<Semester | 'ALL'>('ALL');
-  const [selectedSubject, setSelectedSubject] = useState<SubjectType | 'ALL'>('ALL');
+  const [selectedSemester, setSelectedSemester] = useState<Semester | 'ALL' | 'CUSTOM'>('ALL');
+  const [selectedSubjects, setSelectedSubjects] = useState<SubjectType[]>([
+    'ភាសាខ្មែរ',
+    'គណិតវិទ្យា',
+    'វិទ្យាសាស្ត្រ និងសិក្សាសង្គម',
+    'សីលធម៌ និងពលរដ្ឋវិជ្ជា',
+    'ភាសាអង់គ្លេស',
+  ]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   const [activeView, setActiveView] = useState<'table' | 'print' | 'ai' | 'analytics'>('table');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -34,9 +51,147 @@ export default function App() {
   const [isAddLessonModalOpen, setIsAddLessonModalOpen] = useState<boolean>(false);
   const [isTimetableModalOpen, setIsTimetableModalOpen] = useState<boolean>(false);
   const [isSlowLearnersModalOpen, setIsSlowLearnersModalOpen] = useState<boolean>(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState<boolean>(false);
+
+  // Search input ref & shortcut toast notification
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [shortcutNotification, setShortcutNotification] = useState<string | null>(null);
+
+  const showNotification = (msg: string) => {
+    setShortcutNotification(msg);
+    setTimeout(() => {
+      setShortcutNotification(null);
+    }, 2600);
+  };
+
+  // Firebase Cloud Sync State
+  const [syncUserId, setSyncUserId] = useState<string>(() => localStorage.getItem('firebase_sync_uid') || '');
+  const [isCloudSynced, setIsCloudSynced] = useState<boolean>(false);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
   // Import / Export notification status
   const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Global Keyboard Shortcuts Event Handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      const isInputOrTextArea = targetTag === 'input' || targetTag === 'textarea' || (e.target as HTMLElement)?.isContentEditable;
+
+      // 1. Save & Sync: Ctrl + S / Cmd + S
+      if (isCmdOrCtrl && key === 's') {
+        e.preventDefault();
+        saveCurriculum(lessons);
+        saveSchoolInfo(schoolInfo);
+        if (syncUserId) {
+          syncAllLessonsToCloud(syncUserId, lessons);
+          setLastSyncedAt(new Date());
+        }
+        showNotification('បានរក្សាទុក និងសមកាលកម្មទិន្នន័យលើ Cloud រួចរាល់! (Ctrl+S)');
+        return;
+      }
+
+      // 2. Print View / Print PDF: Ctrl + P / Cmd + P
+      if (isCmdOrCtrl && key === 'p') {
+        e.preventDefault();
+        if (activeView === 'print') {
+          window.print();
+        } else {
+          setActiveView('print');
+          showNotification('បានផ្លាស់ទៅទម្រង់បោះពុម្ព (Ctrl+P) - ចុច Ctrl+P ម្តងទៀតដើម្បីបោះពុម្ព');
+        }
+        return;
+      }
+
+      // 3. Focus Search Input: Ctrl + K, Ctrl + F, or '/' (when not typing in an input)
+      if ((isCmdOrCtrl && (key === 'k' || key === 'f')) || (!isInputOrTextArea && key === '/')) {
+        e.preventDefault();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+        return;
+      }
+
+      // 4. Open AI Teaching Assistant: Ctrl + Shift + A or Ctrl + Shift + G
+      if (isCmdOrCtrl && e.shiftKey && (key === 'a' || key === 'g')) {
+        e.preventDefault();
+        setActiveView('ai');
+        showNotification('បានបើកជំនួយការ AI កិច្ចតែងការ');
+        return;
+      }
+
+      // 5. Open Shortcuts Help Dialog: Ctrl + / or ?
+      if ((isCmdOrCtrl && key === '/') || (!isInputOrTextArea && e.shiftKey && key === '?')) {
+        e.preventDefault();
+        setIsShortcutsModalOpen((prev) => !prev);
+        return;
+      }
+
+      // 6. Add Lesson Modal: Alt + N or Ctrl + Shift + N
+      if ((e.altKey && key === 'n') || (isCmdOrCtrl && e.shiftKey && key === 'n')) {
+        e.preventDefault();
+        setIsAddLessonModalOpen(true);
+        return;
+      }
+
+      // 7. Weekly Timetable Modal: Alt + T
+      if (e.altKey && key === 't') {
+        e.preventDefault();
+        setIsTimetableModalOpen(true);
+        return;
+      }
+
+      // 8. Slow Learners Modal: Alt + S
+      if (e.altKey && key === 's') {
+        e.preventDefault();
+        setIsSlowLearnersModalOpen(true);
+        return;
+      }
+
+      // 9. Switch Grade Level: Alt + 1 to Alt + 6
+      if (e.altKey && ['1', '2', '3', '4', '5', '6'].includes(key)) {
+        e.preventDefault();
+        const gradeMap: Record<string, GradeLevel> = {
+          '1': 'ថ្នាក់ទី១',
+          '2': 'ថ្នាក់ទី២',
+          '3': 'ថ្នាក់ទី៣',
+          '4': 'ថ្នាក់ទី៤',
+          '5': 'ថ្នាក់ទី៥',
+          '6': 'ថ្នាក់ទី៦',
+        };
+        const targetGrade = gradeMap[key];
+        if (targetGrade) {
+          setSelectedGrade(targetGrade);
+          showNotification(`បានផ្លាស់ទៅកម្រិតថ្នាក់៖ ${targetGrade}`);
+        }
+        return;
+      }
+
+      // 10. Escape key: Close any active modal or blur search
+      if (key === 'escape') {
+        setIsAIModalOpen(false);
+        setIsDetailModalOpen(false);
+        setIsSchoolModalOpen(false);
+        setIsAddLessonModalOpen(false);
+        setIsTimetableModalOpen(false);
+        setIsSlowLearnersModalOpen(false);
+        setIsCloudModalOpen(false);
+        setIsShortcutsModalOpen(false);
+        setImportStatus(null);
+        if (document.activeElement === searchInputRef.current) {
+          searchInputRef.current?.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lessons, schoolInfo, syncUserId, activeView]);
 
   // Save changes to local storage
   useEffect(() => {
@@ -47,17 +202,146 @@ export default function App() {
     saveSchoolInfo(schoolInfo);
   }, [schoolInfo]);
 
-  // Filter lessons based on grade, semester, subject, search term
+  // Firebase Auth Initialization & Real-Time Listeners
+  useEffect(() => {
+    const unsubAuth = initAuth((user) => {
+      const activeUid = user.uid;
+      setSyncUserId(activeUid);
+      localStorage.setItem('firebase_sync_uid', activeUid);
+      setIsCloudSynced(true);
+    });
+
+    return () => unsubAuth();
+  }, []);
+
+  // Real-time listener for cloud lesson notes & progress
+  useEffect(() => {
+    if (!syncUserId) return;
+
+    setIsSyncing(true);
+    const unsubLessons = listenToCloudLessons(syncUserId, (remoteMap) => {
+      if (Object.keys(remoteMap).length > 0) {
+        setLessons((prevLessons) =>
+          prevLessons.map((l) => {
+            const remoteData = remoteMap[l.id];
+            if (remoteData) {
+              return {
+                ...l,
+                completed: remoteData.completed !== undefined ? remoteData.completed : l.completed,
+                customNotes: remoteData.customNotes !== undefined ? remoteData.customNotes : l.customNotes,
+              };
+            }
+            return l;
+          })
+        );
+      }
+      setIsSyncing(false);
+      setIsCloudSynced(true);
+      setLastSyncedAt(new Date());
+    });
+
+    const unsubSchool = listenToCloudSchoolInfo(syncUserId, (remoteSchool) => {
+      if (remoteSchool && remoteSchool.schoolName) {
+        setSchoolInfo(remoteSchool);
+      }
+    });
+
+    return () => {
+      unsubLessons();
+      unsubSchool();
+    };
+  }, [syncUserId]);
+
+  // Handlers for data updates + Cloud Sync
+  const handleToggleComplete = (id: string) => {
+    setLessons((prev) => {
+      const updated = prev.map((l) => (l.id === id ? { ...l, completed: !l.completed } : l));
+      const targetLesson = updated.find((l) => l.id === id);
+      if (targetLesson && syncUserId) {
+        syncLessonToCloud(syncUserId, targetLesson);
+        setLastSyncedAt(new Date());
+      }
+      return updated;
+    });
+  };
+
+  const handleSaveNotes = (id: string, notes: string) => {
+    setLessons((prev) => {
+      const updated = prev.map((l) => (l.id === id ? { ...l, customNotes: notes } : l));
+      const targetLesson = updated.find((l) => l.id === id);
+      if (targetLesson && syncUserId) {
+        syncLessonToCloud(syncUserId, targetLesson);
+        setLastSyncedAt(new Date());
+      }
+      return updated;
+    });
+  };
+
+  const handleAddLesson = (newLesson: LessonPlan) => {
+    setLessons((prev) => [newLesson, ...prev]);
+    if (syncUserId) {
+      syncLessonToCloud(syncUserId, newLesson);
+      setLastSyncedAt(new Date());
+    }
+  };
+
+  const handleSaveSchoolInfo = (info: SchoolInfo) => {
+    setSchoolInfo(info);
+    saveSchoolInfo(info);
+    if (syncUserId) {
+      syncSchoolInfoToCloud(syncUserId, info);
+      setLastSyncedAt(new Date());
+    }
+  };
+
+  // Manual Upload / Download Cloud Sync
+  const handleManualSyncUp = useCallback(async () => {
+    if (!syncUserId) return;
+    setIsSyncing(true);
+    await syncAllLessonsToCloud(syncUserId, lessons);
+    await syncSchoolInfoToCloud(syncUserId, schoolInfo);
+    setIsSyncing(false);
+    setIsCloudSynced(true);
+    setLastSyncedAt(new Date());
+  }, [syncUserId, lessons, schoolInfo]);
+
+  const handleManualSyncDown = useCallback(async () => {
+    if (!syncUserId) return;
+    setIsSyncing(true);
+    // Listeners automatically reflect changes
+    setTimeout(() => {
+      setIsSyncing(false);
+      setLastSyncedAt(new Date());
+    }, 1000);
+  }, [syncUserId]);
+
+  const handleConnectCustomSyncCode = (code: string) => {
+    setSyncUserId(code);
+    localStorage.setItem('firebase_sync_uid', code);
+    setIsCloudSynced(true);
+  };
+
+  // Filter lessons based on grade, multi-select subjects, selected months interval, and search term
   const filteredLessons = useMemo(() => {
     return lessons.filter((lesson) => {
       // Grade filter
       if (lesson.grade !== selectedGrade) return false;
 
-      // Semester filter
-      if (selectedSemester !== 'ALL' && lesson.semester !== selectedSemester) return false;
+      // Multi-Select Subjects filter
+      if (selectedSubjects.length > 0 && !selectedSubjects.includes(lesson.subject)) {
+        return false;
+      }
+      if (selectedSubjects.length === 0) {
+        return false;
+      }
 
-      // Subject filter
-      if (selectedSubject !== 'ALL' && lesson.subject !== selectedSubject) return false;
+      // Specific Monthly Interval filter
+      if (selectedMonths.length > 0 && !selectedMonths.includes(lesson.monthNumber)) {
+        return false;
+      }
+      if (selectedMonths.length === 0) {
+        return false;
+      }
 
       // Search term filter
       if (searchTerm.trim()) {
@@ -71,25 +355,23 @@ export default function App() {
 
       return true;
     });
-  }, [lessons, selectedGrade, selectedSemester, selectedSubject, searchTerm]);
+  }, [lessons, selectedGrade, selectedSubjects, selectedMonths, searchTerm]);
 
-  // Handlers
-  const handleToggleComplete = (id: string) => {
-    setLessons((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, completed: !l.completed } : l))
-    );
+  // Reset all filters to default full view
+  const handleResetFilters = () => {
+    setSelectedSubjects([
+      'ភាសាខ្មែរ',
+      'គណិតវិទ្យា',
+      'វិទ្យាសាស្ត្រ និងសិក្សាសង្គម',
+      'សីលធម៌ និងពលរដ្ឋវិជ្ជា',
+      'ភាសាអង់គ្លេស',
+    ]);
+    setSelectedMonths([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    setSelectedSemester('ALL');
+    setSearchTerm('');
   };
 
-  const handleSaveNotes = (id: string, notes: string) => {
-    setLessons((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, customNotes: notes } : l))
-    );
-  };
-
-  const handleAddLesson = (newLesson: LessonPlan) => {
-    setLessons((prev) => [newLesson, ...prev]);
-  };
-
+  // Handlers for modal actions
   const handleOpenAIForLesson = (lesson: LessonPlan) => {
     setSelectedLessonForAI(lesson);
     setIsAIModalOpen(true);
@@ -203,17 +485,24 @@ export default function App() {
         setSelectedGrade={setSelectedGrade}
         selectedSemester={selectedSemester}
         setSelectedSemester={setSelectedSemester}
-        selectedSubject={selectedSubject}
-        setSelectedSubject={setSelectedSubject}
+        selectedSubjects={selectedSubjects}
+        setSelectedSubjects={setSelectedSubjects}
+        selectedMonths={selectedMonths}
+        setSelectedMonths={setSelectedMonths}
         activeView={activeView}
         setActiveView={setActiveView}
         onOpenAddLessonModal={() => setIsAddLessonModalOpen(true)}
         onOpenTimetableModal={() => setIsTimetableModalOpen(true)}
         onOpenSlowLearnersModal={() => setIsSlowLearnersModalOpen(true)}
+        onOpenCloudSyncModal={() => setIsCloudModalOpen(true)}
+        onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
+        isCloudSynced={isCloudSynced}
+        isSyncing={isSyncing}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         onExportData={handleExportData}
         onImportData={handleImportData}
+        searchInputRef={searchInputRef}
       />
 
       {/* Main Content Area */}
@@ -224,13 +513,20 @@ export default function App() {
           <div>
             {/* Quick Summary Pill Bar */}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-700">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
                 <span>បង្ហាញ៖ <strong className="text-blue-900 font-extrabold">{selectedGrade}</strong></span>
                 <span className="text-slate-300">|</span>
-                <span>{selectedSemester === 'ALL' ? 'ពេញមួយឆ្នាំ (១០ខែ)' : selectedSemester}</span>
+                <span>
+                  ចន្លោះខែ៖ <strong className="text-amber-800">{selectedMonths.length === 10 ? '១០ខែពេញ' : `ខែទី${Math.min(...selectedMonths)}..${Math.max(...selectedMonths)} (${selectedMonths.length}ខែ)`}</strong>
+                </span>
                 <span className="text-slate-300">|</span>
-                <span>{selectedSubject === 'ALL' ? 'មុខវិជ្ជាទាំងអស់' : selectedSubject}</span>
+                <span>
+                  មុខវិជ្ជា ({selectedSubjects.length}/5)៖{' '}
+                  <strong className="text-blue-900 font-extrabold">
+                    {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជា' : selectedSubjects.join(', ')}
+                  </strong>
+                </span>
               </div>
 
               <div className="flex items-center gap-4 text-xs font-semibold text-slate-600">
@@ -248,10 +544,12 @@ export default function App() {
               lessons={filteredLessons}
               selectedGrade={selectedGrade}
               selectedSemester={selectedSemester}
-              selectedSubject={selectedSubject}
+              selectedSubjects={selectedSubjects}
+              selectedMonths={selectedMonths}
               onSelectLessonForAI={handleOpenAIForLesson}
               onOpenLessonDetail={handleOpenDetailForLesson}
               onToggleComplete={handleToggleComplete}
+              onResetFilters={handleResetFilters}
             />
           </div>
         )}
@@ -298,7 +596,8 @@ export default function App() {
             schoolInfo={schoolInfo}
             selectedGrade={selectedGrade}
             selectedSemester={selectedSemester}
-            selectedSubject={selectedSubject}
+            selectedSubjects={selectedSubjects}
+            selectedMonths={selectedMonths}
             onBackToTable={() => setActiveView('table')}
           />
         )}
@@ -334,7 +633,7 @@ export default function App() {
         schoolInfo={schoolInfo}
         isOpen={isSchoolModalOpen}
         onClose={() => setIsSchoolModalOpen(false)}
-        onSave={(info) => setSchoolInfo(info)}
+        onSave={handleSaveSchoolInfo}
       />
 
       <AddLessonModal
@@ -357,6 +656,30 @@ export default function App() {
         selectedGrade={selectedGrade}
         schoolInfo={schoolInfo}
       />
+
+      <CloudSyncModal
+        isOpen={isCloudModalOpen}
+        onClose={() => setIsCloudModalOpen(false)}
+        syncUserId={syncUserId}
+        isSyncing={isSyncing}
+        lastSyncedAt={lastSyncedAt}
+        onManualSyncUp={handleManualSyncUp}
+        onManualSyncDown={handleManualSyncDown}
+        onConnectCustomSyncCode={handleConnectCustomSyncCode}
+      />
+
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsModalOpen}
+        onClose={() => setIsShortcutsModalOpen(false)}
+      />
+
+      {/* Shortcut Quick Toast Notification */}
+      {shortcutNotification && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900/90 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700 backdrop-blur-md flex items-center gap-2.5 text-xs font-bold animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <Keyboard className="w-4 h-4 text-amber-400" />
+          <span>{shortcutNotification}</span>
+        </div>
+      )}
 
       {/* Import / Export Notification Modal */}
       {importStatus && (

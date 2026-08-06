@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "users": {
+      "title": "Users",
+      "description": "Teacher profiles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid"]
+    },
+    "school_info": {
+      "title": "School Info",
+      "description": "School configuration synced per user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "provinceDistrict": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "academicYear": { "type": "string" },
+        "clusterSchool": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId"]
+    },
+    "lessons": {
+      "title": "Lessons",
+      "description": "User notes and completion progress synced to cloud",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "customNotes": { "type": "string" },
+        "grade": { "type": "string" },
+        "subject": { "type": "string" },
+        "lessonTitle": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "userId"]
+    }
+  }
+}

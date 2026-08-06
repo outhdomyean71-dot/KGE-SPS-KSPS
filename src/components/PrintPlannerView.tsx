@@ -7,8 +7,9 @@ interface PrintPlannerViewProps {
   lessons: LessonPlan[];
   schoolInfo: SchoolInfo;
   selectedGrade: GradeLevel;
-  selectedSemester: Semester | 'ALL';
-  selectedSubject: SubjectType | 'ALL';
+  selectedSemester: Semester | 'ALL' | 'CUSTOM';
+  selectedSubjects: SubjectType[];
+  selectedMonths: number[];
   onBackToTable: () => void;
 }
 
@@ -17,7 +18,8 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
   schoolInfo,
   selectedGrade,
   selectedSemester,
-  selectedSubject,
+  selectedSubjects,
+  selectedMonths,
   onBackToTable,
 }) => {
   // Section toggle states
@@ -213,7 +215,7 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
             ផែនការបង្រៀនប្រចាំឆ្នាំ (១ឆ្នាំពេញ)
           </h1>
           <p className="text-xs text-slate-600 font-bold mt-1">
-            សម្រាប់មុខវិជ្ជា៖ {selectedSubject === 'ALL' ? 'មុខវិជ្ជាចំណេះទូទៅទាំងអស់' : selectedSubject} | {selectedSemester === 'ALL' ? 'ឆមាសទី១ និង ឆមាសទី២' : selectedSemester}
+            សម្រាប់មុខវិជ្ជា៖ {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | {selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}
           </p>
         </div>
 
