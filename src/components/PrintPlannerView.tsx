@@ -184,40 +184,45 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
       {/* Official Print Preview Container */}
       <div id="printable-annual-planner" className="bg-white p-8 md:p-12 shadow-lg rounded-xl border border-slate-200 print:shadow-none print:border-none print:p-0">
         
-        {/* National Header Block */}
-        <div className="text-center space-y-1 mb-8">
-          {showLogo && (
-            <div className="flex justify-center mb-2">
-              <SovannaphumiLogo className="w-16 h-16" size={64} />
-            </div>
-          )}
-          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest">
-            សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
-          </h2>
-          <div className="w-24 h-0.5 bg-amber-500 mx-auto my-2"></div>
+        {/* National Header Block matching official template */}
+        <div className="mb-6 space-y-4">
+          {/* Top Center: Logo and School Name */}
+          <div className="text-center space-y-1">
+            {showLogo && (
+              <div className="flex justify-center mb-2">
+                <SovannaphumiLogo className="w-16 h-16" size={64} />
+              </div>
+            )}
+            <h2 className="text-base md:text-lg font-bold text-slate-900 tracking-wide">
+              សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
+            </h2>
+            <div className="w-28 h-0.5 bg-amber-500 mx-auto my-1.5"></div>
+          </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-between pt-2 text-xs font-semibold text-slate-800 text-left">
-            <div>
+          {/* Left and Right Info Columns */}
+          <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-800 pt-2 leading-relaxed">
+            <div className="text-left space-y-0.5">
               <p>ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-              <p>មន្ទីរអប់រំ យុវជន និងកីឡា៖ {schoolInfo.provinceDistrict}</p>
-              <p>{schoolInfo.schoolName}</p>
+              <p>មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
+              <p>{schoolInfo.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
             </div>
-            <div className="text-right mt-2 sm:mt-0">
-              <p>កម្រិតថ្នាក់៖ <strong>{selectedGrade}</strong></p>
-              <p>ឆ្នាំសិក្សា៖ <strong>{schoolInfo.academicYear}</strong></p>
-              <p>គ្រូបន្ទុកថ្នាក់៖ <strong>{schoolInfo.teacherName}</strong></p>
+            
+            <div className="text-right space-y-0.5">
+              <p>កម្រិតថ្នាក់៖ <strong className="font-bold">{selectedGrade}</strong></p>
+              <p>ឆ្នាំសិក្សា៖ <strong className="font-bold">{schoolInfo.academicYear || '២០២៦ - ២០២៧'}</strong></p>
+              <p>គ្រូបន្ទុកថ្នាក់៖ <strong className="font-bold">{schoolInfo.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}</strong></p>
             </div>
           </div>
-        </div>
 
-        {/* Title */}
-        <div className="text-center my-6">
-          <h1 className="text-base md:text-lg font-black text-slate-900 uppercase">
-            ផែនការបង្រៀនប្រចាំឆ្នាំ (១ឆ្នាំពេញ)
-          </h1>
-          <p className="text-xs text-slate-600 font-bold mt-1">
-            សម្រាប់មុខវិជ្ជា៖ {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | {selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}
-          </p>
+          {/* Centered Document Title */}
+          <div className="text-center pt-4 pb-2 border-b border-slate-300">
+            <h1 className="text-base md:text-xl font-bold text-slate-900">
+              ផែនការបង្រៀនប្រចាំឆ្នាំ (១ឆ្នាំពេញ)
+            </h1>
+            <p className="text-xs text-slate-700 font-bold mt-1">
+              សម្រាប់មុខវិជ្ជា៖ {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | {selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}
+            </p>
+          </div>
         </div>
 
         {/* Printable Table */}

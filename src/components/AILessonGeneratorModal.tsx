@@ -748,17 +748,35 @@ ${currentAppUrl}`;
             <div id="printable-lesson-plan" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
               
               {/* MoEYS Official National Header for Print */}
-              <div className="text-center space-y-1 mb-6 border-b-2 border-slate-800 pb-4">
-                <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
-                </p>
-                <p className="text-[11px] font-semibold text-slate-700">
-                  ក្រសួងអប់រំ យុវជន និងកីឡា | មន្ទីរអប់រំ យុវជន និងកីឡាខេត្តកំពង់ស្ពឺ
-                </p>
-                <div className="w-24 h-0.5 bg-amber-500 mx-auto my-1.5"></div>
-                <h2 className="text-base font-black text-slate-900 uppercase pt-1">
-                  កិច្ចតែងការបង្រៀន (៥ជំហាន) — {fiveStepPlan.title}
-                </h2>
+              <div className="mb-6 space-y-4 border-b-2 border-slate-800 pb-4">
+                <div className="text-center space-y-1">
+                  <div className="flex justify-center mb-1">
+                    <SovannaphumiLogo className="w-14 h-14" size={56} />
+                  </div>
+                  <h2 className="text-base font-bold text-slate-900 tracking-wide">
+                    សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
+                  </h2>
+                  <div className="w-28 h-0.5 bg-amber-500 mx-auto my-1.5"></div>
+                </div>
+
+                <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-800 pt-1 leading-relaxed">
+                  <div className="text-left space-y-0.5">
+                    <p>ក្រសួងអប់រំ យុវជន និងកីឡា</p>
+                    <p>មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
+                    <p>សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <p>កម្រិតថ្នាក់៖ <strong className="font-bold">{fiveStepPlan.grade}</strong></p>
+                    <p>ឆ្នាំសិក្សា៖ <strong className="font-bold">២០២៦ - ២០២៧</strong></p>
+                    <p>គ្រូបន្ទុកថ្នាក់៖ <strong className="font-bold">លោកគ្រូ / អ្នកគ្រូ</strong></p>
+                  </div>
+                </div>
+
+                <div className="text-center pt-2">
+                  <h1 className="text-base font-black text-slate-900 uppercase">
+                    កិច្ចតែងការបង្រៀន (៥ជំហាន) — {fiveStepPlan.title}
+                  </h1>
+                </div>
               </div>
 
               {/* Lesson Metadata Banner */}
