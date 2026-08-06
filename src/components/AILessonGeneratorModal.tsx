@@ -715,13 +715,24 @@ ${currentAppUrl}`;
 
           {/* Generated 5-Step Lesson Plan Display */}
           {!loading && !error && activeTab === 'plan' && fiveStepPlan && (
-            <div id="printable-lesson-plan" className="space-y-6">
+            <div id="printable-lesson-plan" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
               
+              {/* MoEYS Official National Header for Print */}
+              <div className="text-center space-y-1 mb-6 border-b-2 border-slate-800 pb-4">
+                <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
+                </p>
+                <p className="text-[11px] font-semibold text-slate-700">
+                  ក្រសួងអប់រំ យុវជន និងកីឡា | មន្ទីរអប់រំ យុវជន និងកីឡាខេត្តកំពង់ស្ពឺ
+                </p>
+                <div className="w-24 h-0.5 bg-amber-500 mx-auto my-1.5"></div>
+                <h2 className="text-base font-black text-slate-900 uppercase pt-1">
+                  កិច្ចតែងការបង្រៀន (៥ជំហាន) — {fiveStepPlan.title}
+                </h2>
+              </div>
+
               {/* Lesson Metadata Banner */}
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-900">
-                <h3 className="text-base font-bold text-amber-950 mb-2">
-                  {fiveStepPlan.title}
-                </h3>
+              <div className="p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-900">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                   <div><strong>កម្រិតថ្នាក់៖</strong> {fiveStepPlan.grade}</div>
                   <div><strong>មុខវិជ្ជា៖</strong> {fiveStepPlan.subject}</div>
@@ -762,7 +773,7 @@ ${currentAppUrl}`;
                 </h4>
 
                 {fiveStepPlan.steps.map((step) => (
-                  <div key={step.stepNumber} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                  <div key={step.stepNumber} className="step-card bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
                     <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                       <span className="font-bold text-slate-900 text-xs">
                         {step.title}
@@ -804,24 +815,60 @@ ${currentAppUrl}`;
                   <p className="leading-relaxed">{fiveStepPlan.pedagogicalAdvice}</p>
                 </div>
               )}
+
+              {/* Signature Sign-off Block for Print */}
+              <div className="pt-8 border-t border-slate-300 mt-8 grid grid-cols-2 text-center text-xs text-slate-900 font-bold signature-block">
+                <div className="space-y-12">
+                  <div>
+                    <p>បានឃើញ និងឯកភាព</p>
+                    <p className="uppercase mt-0.5">នាយកសាលាបឋមសិក្សា</p>
+                  </div>
+                  <p>...................................................</p>
+                </div>
+
+                <div className="space-y-12">
+                  <div>
+                    <p>ថ្ងៃ................ ខែ........... ឆ្នាំ២០២៦</p>
+                    <p className="mt-0.5">គ្រូបន្ទុកថ្នាក់</p>
+                  </div>
+                  <p>...................................................</p>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Generated Student Worksheet Display */}
           {!loading && !error && activeTab === 'worksheet' && worksheet && (
-            <div id="printable-worksheet" className="space-y-6">
+            <div id="printable-worksheet" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
+              
+              {/* MoEYS Official National Header for Print */}
+              <div className="text-center space-y-1 mb-6 border-b-2 border-slate-800 pb-4">
+                <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
+                </p>
+                <p className="text-[11px] font-semibold text-slate-700">
+                  ក្រសួងអប់រំ យុវជន និងកីឡា | មន្ទីរអប់រំ យុវជន និងកីឡាខេត្តកំពង់ស្ពឺ
+                </p>
+                <div className="w-24 h-0.5 bg-emerald-600 mx-auto my-1.5"></div>
+                <h2 className="text-base font-black text-slate-900 uppercase pt-1">
+                  {worksheet.title}
+                </h2>
+              </div>
+
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-base font-bold mb-1">{worksheet.title}</h3>
-                  <p className="text-xs text-emerald-800">
-                    ការណែនាំ៖ {worksheet.instructions} | រយៈពេល៖ {worksheet.timeAllowed} | ពិន្ទុសរុប៖ {worksheet.totalPoints}
+                  <p className="text-xs text-emerald-900 font-bold">
+                    ការណែនាំ៖ {worksheet.instructions}
+                  </p>
+                  <p className="text-xs text-emerald-800 mt-1">
+                    រយៈពេល៖ <strong>{worksheet.timeAllowed}</strong> | ពិន្ទុសរុប៖ <strong>{worksheet.totalPoints} ពិន្ទុ</strong>
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setShowAnswers(!showAnswers)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs border shrink-0 ${
+                  className={`no-print flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs border shrink-0 ${
                     showAnswers
                       ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
                       : 'bg-amber-600 text-white border-amber-700 hover:bg-amber-700'
@@ -844,7 +891,7 @@ ${currentAppUrl}`;
 
               <div className="space-y-4">
                 {worksheet.questions.map((q, idx) => (
-                  <div key={q.id || idx} className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs text-xs space-y-2">
+                  <div key={q.id || idx} className="question-card p-4 bg-white rounded-xl border border-slate-200 shadow-xs text-xs space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="font-bold text-slate-900">
                         {idx + 1}. {q.question}
@@ -876,6 +923,25 @@ ${currentAppUrl}`;
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Signature Sign-off Block for Print */}
+              <div className="pt-8 border-t border-slate-300 mt-8 grid grid-cols-2 text-center text-xs text-slate-900 font-bold signature-block">
+                <div className="space-y-12">
+                  <div>
+                    <p>បានឃើញ និងឯកភាព</p>
+                    <p className="uppercase mt-0.5">នាយកសាលាបឋមសិក្សា</p>
+                  </div>
+                  <p>...................................................</p>
+                </div>
+
+                <div className="space-y-12">
+                  <div>
+                    <p>ថ្ងៃ................ ខែ........... ឆ្នាំ២០២៦</p>
+                    <p className="mt-0.5">គ្រូបន្ទុកថ្នាក់</p>
+                  </div>
+                  <p>...................................................</p>
+                </div>
               </div>
             </div>
           )}

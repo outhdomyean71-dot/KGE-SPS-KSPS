@@ -643,7 +643,12 @@ export function printDocument(elementId: string, docTitle: string) {
     return;
   }
 
-  const printWindow = window.open('', '_blank', 'width=900,height=1000');
+  // Create a clean clone of the content element to remove interactive elements like buttons before printing
+  const clonedContent = contentEl.cloneNode(true) as HTMLElement;
+  const buttonsAndControls = clonedContent.querySelectorAll('button, input, select, .no-print');
+  buttonsAndControls.forEach((el) => el.remove());
+
+  const printWindow = window.open('', '_blank', 'width=950,height=1100');
   if (!printWindow) {
     // Fallback if popup blocker active
     window.print();
@@ -657,32 +662,121 @@ export function printDocument(elementId: string, docTitle: string) {
       <meta charset="UTF-8">
       <title>${docTitle}</title>
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&family=Moul&display=swap');
-        body {
-          font-family: 'Kantumruy Pro', 'Khmer OS Battambang', sans-serif;
-          color: #0f172a;
-          padding: 20px;
-          margin: 0;
-          background: #ffffff;
+        @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Moul&display=swap');
+
+        * {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
-        * { box-sizing: border-box; }
-        .print-container { max-width: 100%; margin: 0 auto; }
+
+        body {
+          font-family: 'Kantumruy Pro', 'Khmer OS Battambang', system-ui, -apple-system, sans-serif;
+          color: #0f172a;
+          background: #ffffff;
+          margin: 0;
+          padding: 24px;
+          line-height: 1.6;
+          font-size: 13px;
+        }
+
+        .print-container {
+          max-width: 100%;
+          margin: 0 auto;
+        }
+
+        .no-print, button, input, select {
+          display: none !important;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+          color: #0f172a;
+          margin-top: 0;
+          line-height: 1.3;
+        }
+
+        .khmer-moul {
+          font-family: 'Moul', serif;
+        }
+
+        /* Prevent ugly page breaks */
+        .step-card, .question-card, tr, .avoid-break, .signature-block, .section-box {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+
+        /* Table formatting */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 12px 0;
+        }
+
+        th, td {
+          border: 1px solid #334155;
+          padding: 8px 10px;
+          text-align: left;
+          vertical-align: top;
+        }
+
+        th {
+          background-color: #f1f5f9 !important;
+          color: #0f172a;
+          font-weight: 700;
+        }
+
+        /* Card and Grid Helpers */
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .gap-4 { gap: 16px; }
+
+        .p-2 { padding: 8px; }
+        .p-3 { padding: 12px; }
+        .p-4 { padding: 16px; }
+        .rounded-lg { border-radius: 8px; }
+        .rounded-xl { border-radius: 12px; }
+        .border { border: 1px solid #cbd5e1; }
+        .bg-amber-50 { background-color: #fffbeb !important; }
+        .bg-blue-50 { background-color: #eff6ff !important; }
+        .bg-emerald-50 { background-color: #ecfdf5 !important; }
+        .bg-purple-50 { background-color: #faf5ff !important; }
+        .bg-slate-50 { background-color: #f8fafc !important; }
+        .bg-slate-100 { background-color: #f1f5f9 !important; }
+
+        @page {
+          size: A4 portrait;
+          margin: 12mm 15mm 15mm 15mm;
+        }
+
         @media print {
-          body { padding: 0; }
-          @page { margin: 15mm; size: A4; }
+          body {
+            padding: 0;
+            background: #ffffff;
+          }
+          .print-container {
+            width: 100%;
+          }
         }
       </style>
       <link rel="stylesheet" href="/src/index.css">
     </head>
     <body>
       <div class="print-container">
-        ${contentEl.innerHTML}
+        ${clonedContent.innerHTML}
       </div>
       <script>
-        setTimeout(() => {
-          window.print();
-          window.close();
-        }, 500);
+        // Wait for fonts to load before printing
+        document.fonts.ready.then(() => {
+          setTimeout(() => {
+            window.print();
+            window.close();
+          }, 300);
+        });
       </script>
     </body>
     </html>
