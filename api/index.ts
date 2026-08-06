@@ -1,5 +1,6 @@
 import express from 'express';
 import { GoogleGenAI } from '@google/genai';
+import { jsonrepair } from 'jsonrepair';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -58,7 +59,17 @@ const parseAIJsonResponse = (rawText: string) => {
     .replace(/^```\s*/i, '')
     .replace(/\s*```$/i, '')
     .trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (err1) {
+    try {
+      const repaired = jsonrepair(cleaned);
+      return JSON.parse(repaired);
+    } catch (err2) {
+      console.error('Failed to parse AI JSON response:', err2, 'Raw:', rawText);
+      throw err1;
+    }
+  }
 };
 
 // Health check endpoint
@@ -165,6 +176,7 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
         systemInstruction,
         responseMimeType: 'application/json',
         temperature: 0.7,
+        maxOutputTokens: 8192,
       },
     });
 
@@ -193,7 +205,7 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
 // Core Worksheet Generator Handler
 const generateWorksheetHandler = async (req: express.Request, res: express.Response) => {
   try {
-    const { grade, subject, lessonTitle, type } = req.body;
+    const { grade, subject, lessonTitle, type, teachingStyle, promptText: customPrompt } = req.body;
 
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
@@ -202,11 +214,23 @@ const generateWorksheetHandler = async (req: express.Request, res: express.Respo
       });
     }
 
+    const styleDescriptions: Record<string, string> = {
+      interactive: 'វិធីសាស្ត្របង្រៀនតាមបែបសកម្ម និងអន្តរកម្ម (Interactive & Student-Centered Learning)',
+      group: 'វិធីសាស្ត្របង្រៀនតាមបែបការងារក្រុម (Group Activity & Peer Collaboration)',
+      lecture: 'វិធីសាស្ត្របង្រៀនតាមបែបពន្យល់ និងបង្ហាញផ្ទាល់ (Lecture & Direct Demonstration)',
+      inquiry: 'វិធីសាស្ត្របង្រៀនតាមបែបស៊ើបសួរ (Inquiry-Based & Problem-Solving)',
+      gamified: 'វិធីសាស្ត្របង្រៀនតាមបែបល្បែងសិក្សា (Gamified & Play-Based Learning)',
+    };
+
+    const selectedStyleText = styleDescriptions[teachingStyle] || teachingStyle || '';
+
     const promptText = `
 អ្នកជាគ្រូបង្រៀនបឋមសិក្សាដ៏មានបទពិសោធន៍។ សូមរៀបចំ ${type === 'quiz' ? 'កម្រងសំណួរប្រឡង/វាយតម្លៃ' : 'សន្លឹកកិច្ចការសិស្សអនុវត្ត'} សម្រាប់៖
 - កម្រិតថ្នាក់៖ ${grade || 'ថ្នាក់ទី១'}
 - មុខវិជ្ជា៖ ${subject || 'ភាសាខ្មែរ'}
 - មេរៀន/ជំពូក៖ ${lessonTitle || 'មេរៀនទូទៅ'}
+${selectedStyleText ? `- រចនាប័ទ្ម/វិធីសាស្ត្របង្រៀន៖ ${selectedStyleText}` : ''}
+${customPrompt ? `- សំណូមពរបន្ថែមពីគ្រូបង្រៀន៖ ${customPrompt}` : ''}
 
 សូមផ្ដល់ជា JSON ដូចតទៅ៖
 {
@@ -232,6 +256,7 @@ const generateWorksheetHandler = async (req: express.Request, res: express.Respo
       config: {
         responseMimeType: 'application/json',
         temperature: 0.7,
+        maxOutputTokens: 8192,
       },
     });
 

@@ -43,7 +43,8 @@ export function exportToHTML(
   type: 'plan' | 'worksheet',
   planData?: FiveStepLessonPlan | null,
   worksheetData?: StudentWorksheet | null,
-  lessonInfo?: LessonPlan | null
+  lessonInfo?: LessonPlan | null,
+  showAnswers: boolean = true
 ) {
   const safeTitle = title.replace(/[^\w\s\u1780-\u17FF]/g, '_') || 'Lesson_Plan';
   const fileName = `${safeTitle}_${type === 'plan' ? 'កិច្ចតែងការ' : 'សន្លឹកកិច្ចការ'}.html`;
@@ -165,9 +166,15 @@ export function exportToHTML(
             `
                 : ''
             }
-            <div class="answer-box">
-              <strong>ចម្លើយត្រឹមត្រូវ និងការបកស្រាយ៖</strong> ${q.answerKey}
-            </div>
+            ${
+              showAnswers
+                ? `<div class="answer-box">
+                    <strong>ចម្លើយត្រឹមត្រូវ និងការបកស្រាយ៖</strong> ${q.answerKey}
+                   </div>`
+                : `<div style="margin-top: 12px; color: #94a3b8; font-size: 12px; font-weight: 500;">
+                    ចម្លើយសិស្ស៖ ............................................................................................................................
+                   </div>`
+            }
           </div>
         `
           )
@@ -365,7 +372,8 @@ export async function exportToPowerPoint(
   title: string,
   type: 'plan' | 'worksheet',
   planData?: FiveStepLessonPlan | null,
-  worksheetData?: StudentWorksheet | null
+  worksheetData?: StudentWorksheet | null,
+  showAnswers: boolean = true
 ) {
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_16x9';
@@ -599,15 +607,26 @@ export async function exportToPowerPoint(
         });
       }
 
-      slideQ.addText(`ចម្លើយត្រឹមត្រូវ៖ ${q.answerKey}`, {
-        x: 0.6,
-        y: 4.8,
-        w: 8.8,
-        h: 0.5,
-        fontSize: 14,
-        color: '047857',
-        bold: true,
-      });
+      if (showAnswers) {
+        slideQ.addText(`ចម្លើយត្រឹមត្រូវ៖ ${q.answerKey}`, {
+          x: 0.6,
+          y: 4.8,
+          w: 8.8,
+          h: 0.5,
+          fontSize: 14,
+          color: '047857',
+          bold: true,
+        });
+      } else {
+        slideQ.addText(`ចម្លើយសិស្ស៖ ................................................................................`, {
+          x: 0.6,
+          y: 4.8,
+          w: 8.8,
+          h: 0.5,
+          fontSize: 14,
+          color: '9CA3AF',
+        });
+      }
     });
 
     await pptx.writeFile({ fileName: `${safeTitle}_សន្លឹកកិច្ចការ.pptx` });

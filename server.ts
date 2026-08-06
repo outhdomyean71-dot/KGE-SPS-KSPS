@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
+import { jsonrepair } from 'jsonrepair';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json({ limit: '10mb' }));
 
@@ -70,7 +71,17 @@ async function startServer() {
       .replace(/^```\s*/i, '')
       .replace(/\s*```$/i, '')
       .trim();
-    return JSON.parse(cleaned);
+    try {
+      return JSON.parse(cleaned);
+    } catch (err1) {
+      try {
+        const repaired = jsonrepair(cleaned);
+        return JSON.parse(repaired);
+      } catch (err2) {
+        console.error('Failed to parse AI JSON response:', err2, 'Raw:', rawText);
+        throw err1;
+      }
+    }
   };
 
   // Health check endpoint
@@ -177,6 +188,7 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
           systemInstruction,
           responseMimeType: 'application/json',
           temperature: 0.7,
+          maxOutputTokens: 8192,
         },
       });
 
@@ -205,7 +217,7 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
   // API Endpoint: Generate Student Worksheet or Quiz (សន្លឹកកិច្ចការសិស្ស ឬ កម្រងសំណួរ)
   app.post('/api/gemini/generate-worksheet', async (req, res) => {
     try {
-      const { grade, subject, lessonTitle, type } = req.body; // type: 'worksheet' | 'quiz'
+      const { grade, subject, lessonTitle, type, teachingStyle, promptText: customPrompt } = req.body; // type: 'worksheet' | 'quiz'
 
       if (!process.env.GEMINI_API_KEY) {
         return res.status(500).json({
@@ -214,11 +226,23 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
         });
       }
 
+      const styleDescriptions: Record<string, string> = {
+        interactive: 'វិធីសាស្ត្របង្រៀនតាមបែបសកម្ម និងអន្តរកម្ម (Interactive & Student-Centered Learning)',
+        group: 'វិធីសាស្ត្របង្រៀនតាមបែបការងារក្រុម (Group Activity & Peer Collaboration)',
+        lecture: 'វិធីសាស្ត្របង្រៀនតាមបែបពន្យល់ និងបង្ហាញផ្ទាល់ (Lecture & Direct Demonstration)',
+        inquiry: 'វិធីសាស្ត្របង្រៀនតាមបែបស៊ើបសួរ (Inquiry-Based & Problem-Solving)',
+        gamified: 'វិធីសាស្ត្របង្រៀនតាមបែបល្បែងសិក្សា (Gamified & Play-Based Learning)',
+      };
+
+      const selectedStyleText = styleDescriptions[teachingStyle] || teachingStyle || '';
+
       const promptText = `
 អ្នកជាគ្រូបង្រៀនបឋមសិក្សាដ៏មានបទពិសោធន៍។ សូមរៀបចំ ${type === 'quiz' ? 'កម្រងសំណួរប្រឡង/វាយតម្លៃ' : 'សន្លឹកកិច្ចការសិស្សអនុវត្ត'} សម្រាប់៖
 - កម្រិតថ្នាក់៖ ${grade}
 - មុខវិជ្ជា៖ ${subject}
 - មេរៀន/ជំពូក៖ ${lessonTitle}
+${selectedStyleText ? `- រចនាប័ទ្ម/វិធីសាស្ត្របង្រៀន៖ ${selectedStyleText}` : ''}
+${customPrompt ? `- សំណូមពរបន្ថែមពីគ្រូបង្រៀន៖ ${customPrompt}` : ''}
 
 សូមផ្ដល់ជា JSON ដូចតទៅ៖
 {
@@ -244,6 +268,7 @@ ${promptText ? `- សំណូមពរបន្ថែមពីគ្រូប�
         config: {
           responseMimeType: 'application/json',
           temperature: 0.7,
+          maxOutputTokens: 8192,
         },
       });
 

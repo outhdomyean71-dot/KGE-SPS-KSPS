@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
-import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass } from 'lucide-react';
+import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 
 interface AILessonGeneratorModalProps {
@@ -22,6 +22,7 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
   
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [teachingStyle, setTeachingStyle] = useState<string>('interactive');
+  const [showAnswers, setShowAnswers] = useState<boolean>(false);
   const [fiveStepPlan, setFiveStepPlan] = useState<FiveStepLessonPlan | null>(null);
   const [worksheet, setWorksheet] = useState<StudentWorksheet | null>(null);
 
@@ -132,6 +133,8 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
           subject: lesson.subject,
           lessonTitle: lesson.lessonTitle,
           type: 'worksheet',
+          teachingStyle: teachingStyle,
+          promptText: customPrompt,
         }),
       });
 
@@ -198,7 +201,7 @@ ${worksheet.questions
     (q, i) => `
 ${i + 1}. ${q.question} (${q.points} ពិន្ទុ)
 ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
-* ចម្លើយ៖ ${q.answerKey}
+${showAnswers ? `* ចម្លើយ៖ ${q.answerKey}` : '* ចម្លើយសិស្ស៖ ....................................'}
 `
   )
   .join('\n')}
@@ -222,7 +225,8 @@ ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
       activeTab,
       fiveStepPlan,
       worksheet,
-      lesson
+      lesson,
+      showAnswers
     );
   };
 
@@ -231,7 +235,8 @@ ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
       lesson.lessonTitle,
       activeTab,
       fiveStepPlan,
-      worksheet
+      worksheet,
+      showAnswers
     );
   };
 
@@ -558,9 +563,46 @@ ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
                 className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer shrink-0 disabled:opacity-50 self-end md:self-auto"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>បង្កើតកិច្ចតែងការឡើងវិញ</span>
+                <span>{activeTab === 'plan' ? 'បង្កើតកិច្ចតែងការឡើងវិញ' : 'បង្កើតសន្លឹកកិច្ចការឡើងវិញ'}</span>
               </button>
             </div>
+
+            {/* Worksheet Answer Key Toggle */}
+            {activeTab === 'worksheet' && (
+              <div className="pt-2 border-t border-purple-200/60 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-950">
+                  <Compass className="w-4 h-4 text-emerald-700" />
+                  <span>ការបង្ហាញចម្លើយ (Answer Key Setting)៖</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-purple-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowAnswers(false)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      !showAnswers
+                        ? 'bg-amber-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <EyeOff className="w-3.5 h-3.5" />
+                    <span>មិនបង្ហាញចម្លើយ (សម្រាប់សិស្ស)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAnswers(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                      showAnswers
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>បង្ហាញចម្លើយ (សម្រាប់គ្រូ)</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Loading Indicator */}
@@ -688,11 +730,36 @@ ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
           {/* Generated Student Worksheet Display */}
           {!loading && !error && activeTab === 'worksheet' && worksheet && (
             <div id="printable-worksheet" className="space-y-6">
-              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950">
-                <h3 className="text-base font-bold mb-1">{worksheet.title}</h3>
-                <p className="text-xs text-emerald-800">
-                  ការណែនាំ៖ {worksheet.instructions} | រយៈពេល៖ {worksheet.timeAllowed} | ពិន្ទុសរុប៖ {worksheet.totalPoints}
-                </p>
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold mb-1">{worksheet.title}</h3>
+                  <p className="text-xs text-emerald-800">
+                    ការណែនាំ៖ {worksheet.instructions} | រយៈពេល៖ {worksheet.timeAllowed} | ពិន្ទុសរុប៖ {worksheet.totalPoints}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAnswers(!showAnswers)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-xs border shrink-0 ${
+                    showAnswers
+                      ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
+                      : 'bg-amber-600 text-white border-amber-700 hover:bg-amber-700'
+                  }`}
+                  title="ចុចដើម្បីផ្លាស់ប្ដូរការបង្ហាញចម្លើយ"
+                >
+                  {showAnswers ? (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>កំពុងបង្ហាញចម្លើយ (Teacher Mode)</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>កំពុងលាក់ចម្លើយ (Student Mode)</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               <div className="space-y-4">
@@ -717,9 +784,16 @@ ${q.options ? q.options.map((o) => `   - ${o}`).join('\n') : ''}
                       </div>
                     )}
 
-                    <div className="pt-2 border-t border-slate-100 bg-emerald-50/50 p-2 rounded text-emerald-900 font-medium">
-                      <strong>ចម្លើយត្រឹមត្រូវ និងការបកស្រាយ៖</strong> {q.answerKey}
-                    </div>
+                    {showAnswers ? (
+                      <div className="pt-2 border-t border-slate-100 bg-emerald-50/50 p-2.5 rounded-lg text-emerald-900 font-medium border border-emerald-200/60">
+                        <strong>ចម្លើយត្រឹមត្រូវ និងការបកស្រាយ៖</strong> {q.answerKey}
+                      </div>
+                    ) : (
+                      <div className="pt-3 border-t border-slate-100 text-slate-400 font-medium flex items-center gap-2">
+                        <span className="shrink-0 text-slate-500 font-semibold">ចម្លើយសិស្ស៖</span>
+                        <div className="border-b-2 border-dotted border-slate-300 flex-1 h-4"></div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
