@@ -634,6 +634,51 @@ export async function exportToPowerPoint(
 }
 
 /**
+ * Helper to convert all <img> elements inside clonedContent to Base64 Data URLs or absolute URLs
+ * ensuring images (like school logo) render reliably in standalone HTML files or print windows.
+ */
+function processElementImagesForExport(contentEl: HTMLElement, clonedContent: HTMLElement) {
+  const liveImages = Array.from(contentEl.querySelectorAll('img'));
+  const clonedImages = Array.from(clonedContent.querySelectorAll('img'));
+
+  clonedImages.forEach((clonedImg, idx) => {
+    const liveImg = liveImages[idx];
+    if (!liveImg) return;
+
+    // Try converting loaded live image to Data URL via canvas
+    if (liveImg.complete && liveImg.naturalWidth > 0) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = liveImg.naturalWidth;
+        canvas.height = liveImg.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(liveImg, 0, 0);
+          const dataUrl = canvas.toDataURL('image/png');
+          if (dataUrl && dataUrl.length > 50 && dataUrl.startsWith('data:image')) {
+            clonedImg.setAttribute('src', dataUrl);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not convert image to dataUrl via canvas:', err);
+      }
+    }
+
+    // Fallback: convert relative path to full absolute URL
+    const rawSrc = liveImg.getAttribute('src') || liveImg.src;
+    if (rawSrc) {
+      try {
+        const absoluteUrl = new URL(rawSrc, window.location.href).href;
+        clonedImg.setAttribute('src', absoluteUrl);
+      } catch (e) {
+        clonedImg.setAttribute('src', rawSrc);
+      }
+    }
+  });
+}
+
+/**
  * Clean Print Action: Opens dedicated print window formatted cleanly for paper print or Save as PDF
  */
 export function printDocument(elementId: string, docTitle: string) {
@@ -647,6 +692,9 @@ export function printDocument(elementId: string, docTitle: string) {
   const clonedContent = contentEl.cloneNode(true) as HTMLElement;
   const buttonsAndControls = clonedContent.querySelectorAll('button, input, select, .no-print');
   buttonsAndControls.forEach((el) => el.remove());
+
+  // Ensure logo and images are converted to base64 or absolute URLs
+  processElementImagesForExport(contentEl, clonedContent);
 
   const printWindow = window.open('', '_blank', 'width=950,height=1100');
   if (!printWindow) {
@@ -794,6 +842,9 @@ export function downloadElementAsHTML(elementId: string, docTitle: string) {
   const clonedContent = contentEl.cloneNode(true) as HTMLElement;
   const buttonsAndControls = clonedContent.querySelectorAll('button, input, select, .no-print');
   buttonsAndControls.forEach((el) => el.remove());
+
+  // Convert all images (including Sovannaphumi School Logo) to self-contained Base64 Data URLs
+  processElementImagesForExport(contentEl, clonedContent);
 
   const safeTitle = docTitle.replace(/[^\w\s\u1780-\u17FF]/g, '_') || 'Planner';
   const fileName = `${safeTitle}.html`;
