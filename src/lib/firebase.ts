@@ -58,6 +58,7 @@ export async function syncLessonToCloud(userId: string, lesson: LessonPlan): Pro
         id: lesson.id,
         userId: userId,
         completed: !!lesson.completed,
+        needReinforcement: !!lesson.needReinforcement,
         customNotes: lesson.customNotes || '',
         grade: lesson.grade,
         subject: lesson.subject,
@@ -86,6 +87,7 @@ export async function syncAllLessonsToCloud(userId: string, lessons: LessonPlan[
           id: lesson.id,
           userId: userId,
           completed: !!lesson.completed,
+          needReinforcement: !!lesson.needReinforcement,
           customNotes: lesson.customNotes || '',
           grade: lesson.grade,
           subject: lesson.subject,
@@ -106,7 +108,7 @@ export async function syncAllLessonsToCloud(userId: string, lessons: LessonPlan[
  */
 export function listenToCloudLessons(
   userId: string,
-  onData: (remoteLessons: Record<string, { completed?: boolean; customNotes?: string }>) => void
+  onData: (remoteLessons: Record<string, { completed?: boolean; needReinforcement?: boolean; customNotes?: string }>) => void
 ): () => void {
   if (!userId) return () => {};
 
@@ -114,12 +116,13 @@ export function listenToCloudLessons(
   return onSnapshot(
     q,
     (snapshot) => {
-      const updates: Record<string, { completed?: boolean; customNotes?: string }> = {};
+      const updates: Record<string, { completed?: boolean; needReinforcement?: boolean; customNotes?: string }> = {};
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         if (data.id) {
           updates[data.id] = {
             completed: data.completed,
+            needReinforcement: data.needReinforcement,
             customNotes: data.customNotes,
           };
         }

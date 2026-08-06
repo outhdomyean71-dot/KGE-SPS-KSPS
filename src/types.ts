@@ -30,6 +30,7 @@ export interface LessonPlan {
   teachingAids: string[]; // សម្ភារឧបទេស
   assessmentMethods: string[]; // ការវាយតម្លៃ
   completed?: boolean;
+  needReinforcement?: boolean;
   customNotes?: string;
 }
 

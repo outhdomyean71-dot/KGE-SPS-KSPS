@@ -228,6 +228,7 @@ export default function App() {
               return {
                 ...l,
                 completed: remoteData.completed !== undefined ? remoteData.completed : l.completed,
+                needReinforcement: remoteData.needReinforcement !== undefined ? remoteData.needReinforcement : l.needReinforcement,
                 customNotes: remoteData.customNotes !== undefined ? remoteData.customNotes : l.customNotes,
               };
             }
@@ -256,6 +257,18 @@ export default function App() {
   const handleToggleComplete = (id: string) => {
     setLessons((prev) => {
       const updated = prev.map((l) => (l.id === id ? { ...l, completed: !l.completed } : l));
+      const targetLesson = updated.find((l) => l.id === id);
+      if (targetLesson && syncUserId) {
+        syncLessonToCloud(syncUserId, targetLesson);
+        setLastSyncedAt(new Date());
+      }
+      return updated;
+    });
+  };
+
+  const handleToggleReinforcement = (id: string) => {
+    setLessons((prev) => {
+      const updated = prev.map((l) => (l.id === id ? { ...l, needReinforcement: !l.needReinforcement } : l));
       const targetLesson = updated.find((l) => l.id === id);
       if (targetLesson && syncUserId) {
         syncLessonToCloud(syncUserId, targetLesson);
@@ -549,6 +562,7 @@ export default function App() {
               onSelectLessonForAI={handleOpenAIForLesson}
               onOpenLessonDetail={handleOpenDetailForLesson}
               onToggleComplete={handleToggleComplete}
+              onToggleReinforcement={handleToggleReinforcement}
               onResetFilters={handleResetFilters}
             />
           </div>

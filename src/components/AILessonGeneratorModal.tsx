@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
-import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 
 interface AILessonGeneratorModalProps {
@@ -19,6 +19,8 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [copiedShareText, setCopiedShareText] = useState<boolean>(false);
   
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [teachingStyle, setTeachingStyle] = useState<string>('interactive');
@@ -253,6 +255,72 @@ ${showAnswers ? `* ចម្លើយ៖ ${q.answerKey}` : '* ចម្លើយ
     );
   };
 
+  const getShareSummaryText = () => {
+    if (!lesson) return '';
+    const currentAppUrl = window.location.href;
+    if (activeTab === 'plan' && fiveStepPlan) {
+      return `📚 [កិច្ចតែងការបង្រៀន ៥ជំហាន - AI Generated]
+--------------------------------
+• មុខវិជ្ជា៖ ${lesson.subject} (${lesson.grade})
+• មេរៀន/ជំពូក៖ ${lesson.lessonTitle} (${lesson.chapterTitle})
+• គោលបំណង៖ ${fiveStepPlan.objectivesSummary || lesson.objectives.knowledge}
+• រយៈពេល៖ ${fiveStepPlan.durationMinutes || 45} នាទី
+
+🔗 បើកមើល ឬកែសម្រួលបន្ថែមតាមតំណនេះ៖
+${currentAppUrl}`;
+    } else if (activeTab === 'worksheet' && worksheet) {
+      return `📝 [សន្លឹកកិច្ចការសិស្សអនុវត្ត / កម្រងសំណួរ]
+--------------------------------
+• ប្រធានបទ៖ ${worksheet.title}
+• មុខវិជ្ជា៖ ${lesson.subject} (${lesson.grade})
+• រយៈពេល៖ ${worksheet.timeAllowed} | ពិន្ទុសរុប៖ ${worksheet.totalPoints}
+• ចំនួនសំណួរ៖ ${worksheet.questions.length} សំណួរ
+
+🔗 បើកមើល ឬទាញយកតាមតំណនេះ៖
+${currentAppUrl}`;
+    }
+    return `📚 កិច្ចតែងការបង្រៀន៖ ${lesson.lessonTitle} (${lesson.subject} - ${lesson.grade})\n🔗 ${currentAppUrl}`;
+  };
+
+  const handleShareTelegram = () => {
+    const text = getShareSummaryText();
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
+    window.open(telegramUrl, '_blank');
+  };
+
+  const handleShareEmail = () => {
+    if (!lesson) return;
+    const text = getShareSummaryText();
+    const subject = `${activeTab === 'plan' ? 'កិច្ចតែងការបង្រៀន' : 'សន្លឹកកិច្ចការ'}៖ ${lesson.lessonTitle}`;
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+    window.location.href = mailtoUrl;
+  };
+
+  const handleCopyShareLink = () => {
+    const text = getShareSummaryText();
+    navigator.clipboard.writeText(text);
+    setCopiedShareText(true);
+    setTimeout(() => setCopiedShareText(false), 2000);
+  };
+
+  const handleNativeShare = async () => {
+    if (!lesson) return;
+    const text = getShareSummaryText();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: lesson.lessonTitle,
+          text: text,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.log('Native share cancelled or failed', err);
+      }
+    } else {
+      handleCopyShareLink();
+    }
+  };
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -477,6 +545,18 @@ ${showAnswers ? `* ចម្លើយ៖ ${q.answerKey}` : '* ចម្លើយ
             >
               <Printer className="w-3.5 h-3.5" />
               <span>បោះពុម្ព</span>
+            </button>
+
+            {/* Share Button */}
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              disabled={loading || (!fiveStepPlan && !worksheet)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+              title="ចែករំលែកកិច្ចតែងការទៅកាន់ Telegram / Email / Link"
+            >
+              <Share2 className="w-3.5 h-3.5 text-blue-200" />
+              <span>ចែករំលែក (Share)</span>
             </button>
           </div>
         </div>
@@ -803,6 +883,129 @@ ${showAnswers ? `* ចម្លើយ៖ ${q.answerKey}` : '* ចម្លើយ
         </div>
 
       </div>
+
+      {/* Share Modal Dialog Overlay */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 relative">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-blue-100 text-blue-700 rounded-xl">
+                  <Share2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    ចែករំលែក{activeTab === 'plan' ? 'កិច្ចតែងការ' : 'សន្លឹកកិច្ចការ'} (Share)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    ផ្ញើទៅកាន់ Telegram, Email ឬចម្លងតំណភ្ជាប់
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="p-1.5 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-xl transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Platform Quick Share Buttons */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 block">
+                ជ្រើសរើសវេទិកាចែករំលែក៖
+              </label>
+              
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Telegram Share Button */}
+                <button
+                  type="button"
+                  onClick={handleShareTelegram}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 bg-[#229ED9] hover:bg-[#1d8cb3] text-white font-bold text-xs rounded-xl shadow-2xs transition-all cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>Telegram</span>
+                </button>
+
+                {/* Email Share Button */}
+                <button
+                  type="button"
+                  onClick={handleShareEmail}
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-2xs transition-all cursor-pointer"
+                >
+                  <Mail className="w-4 h-4 text-amber-400" />
+                  <span>Email</span>
+                </button>
+              </div>
+
+              {/* Device System Share (Mobile/Supported Browser) */}
+              {typeof navigator !== 'undefined' && 'share' in navigator && (
+                <button
+                  type="button"
+                  onClick={handleNativeShare}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-bold text-xs rounded-xl border border-indigo-200 transition-all cursor-pointer mt-1"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>ចែករំលែកតាមកម្មវិធីផ្សេងៗ (System Share)</span>
+                </button>
+              )}
+            </div>
+
+            {/* Summary Text Preview & Copy Link */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700">
+                  ខ្លឹមសារសង្ខេប & តំណភ្ជាប់៖
+                </label>
+                {copiedShareText && (
+                  <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                    <Check className="w-3 h-3" /> បានចម្លងរួចរាល់!
+                  </span>
+                )}
+              </div>
+
+              <textarea
+                readOnly
+                rows={4}
+                value={getShareSummaryText()}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-mono resize-none focus:outline-none"
+              />
+
+              <button
+                type="button"
+                onClick={handleCopyShareLink}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-2xs transition-all cursor-pointer"
+              >
+                {copiedShareText ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>បានចម្លងខ្លឹមសារ & តំណភ្ជាប់</span>
+                  </>
+                ) : (
+                  <>
+                    <Link2 className="w-4 h-4 text-amber-300" />
+                    <span>ចម្លងខ្លឹមសារ & តំណភ្ជាប់ (Copy Text & Link)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Footer Close Button */}
+            <div className="pt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all cursor-pointer"
+              >
+                បិទ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
