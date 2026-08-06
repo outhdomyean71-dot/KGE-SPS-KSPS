@@ -738,10 +738,10 @@ export default function App() {
       <footer className="bg-gradient-to-r from-[#f5b335] via-[#ea9c28] to-[#f3a82c] text-slate-950 py-5 px-4 text-center text-xs border-t-2 border-amber-300 shadow-md mt-auto">
         <div className="max-w-7xl mx-auto space-y-1">
           <p className="font-extrabold text-amber-950 text-xs md:text-sm">
-            ប្រព័ន្ធរៀបចំផែនការបង្រៀន និងកម្មវិធីសិក្សាប្រចាំឆ្នាំ — សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
+            @2026 សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
           </p>
-          <p className="text-[11px] font-bold text-amber-900/90">
-            ស្របតាមស្តង់ដារគរុកោសល្យ និងសៀវភៅសិក្សាគោល ឆ្នាំសិក្សា ២០២៦ - ២០២៧
+          <p className="text-[15px] font-bold text-amber-900/90">
+            រក្សាសិទ្ធិដោយ៖ លោកគ្រូ យៀន ឧត្តម
           </p>
         </div>
       </footer>
