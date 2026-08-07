@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LessonPlan, SchoolInfo } from '../types';
-import { X, Sparkles, CheckCircle2, Circle, Edit2, Save, BookOpen, Clock, Layers, Printer, ArrowLeft, School, FileText, Check, RefreshCw, CloudCheck } from 'lucide-react';
+import { LessonPlan, SchoolInfo, OfficePrintConfig } from '../types';
+import { X, Sparkles, CheckCircle2, Circle, Edit2, Save, BookOpen, Clock, Layers, Printer, ArrowLeft, School, FileText, Check, RefreshCw, CloudCheck, SlidersHorizontal } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
+import { OfficialPrintHeader } from './OfficialPrintHeader';
+import { OfficePrintLayoutControl } from './OfficePrintLayoutControl';
+
 
 interface LessonDetailModalProps {
   lesson: LessonPlan | null;
@@ -25,7 +28,14 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
   const [notes, setNotes] = useState<string>(lesson?.customNotes || '');
   const [isEditingNotes, setIsEditingNotes] = useState<boolean>(false);
   const [isPrintPreview, setIsPrintPreview] = useState<boolean>(false);
+  const [showOfficeControl, setShowOfficeControl] = useState<boolean>(false);
+  const [officePrintConfig, setOfficePrintConfig] = useState<OfficePrintConfig>({
+    colorMode: 'official',
+    spacingMode: 'standard',
+    fontSize: 'normal',
+  });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
 
   const lastSavedNotesRef = useRef<string>(lesson?.customNotes || '');
 
@@ -90,9 +100,17 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="text-xs text-amber-300 font-medium hidden sm:inline">
-                ទម្រង់កិច្ចតែងការបង្រៀន A4 ផ្លូវការ
-              </span>
+              <button
+                onClick={() => setShowOfficeControl(!showOfficeControl)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                  showOfficeControl
+                    ? 'bg-amber-500 text-slate-900 border-amber-400'
+                    : 'bg-slate-800 text-amber-300 border-slate-700 hover:bg-slate-700'
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>ទម្រង់បោះពុម្ព (Office Layout)</span>
+              </button>
               <button
                 onClick={handlePrint}
                 className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-md transition-all cursor-pointer"
@@ -109,22 +127,25 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
             </div>
           </div>
 
+          {/* Optional Office Print Controls Panel */}
+          {showOfficeControl && (
+            <div className="print:hidden p-4 bg-slate-900 border-b border-slate-800">
+              <OfficePrintLayoutControl config={officePrintConfig} onChange={setOfficePrintConfig} />
+            </div>
+          )}
+
           {/* Printable Document Content */}
           <div className="p-6 sm:p-10 overflow-y-auto text-slate-900 space-y-6 print:p-0 print:overflow-visible print:text-black">
             
-            {/* Header Block */}
-            <div className="text-center space-y-1.5 border-b-2 border-slate-800 pb-4">
-              <div className="flex flex-col items-center justify-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-widest">
-                <SovannaphumiLogo className="w-12 h-12" size={48} />
-                <span>{schoolInfo?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</span>
-              </div>
-              <h1 className="text-xl font-extrabold text-slate-900 uppercase tracking-wide my-1">
-                កិច្ចតែងការបង្រៀន (LESSON PLAN)
-              </h1>
-              <p className="text-xs text-slate-600 font-medium">
-                {schoolInfo?.provinceDistrict || 'ខេត្តកំពង់ស្ពឺ'} — ឆ្នាំសិក្សា៖ {schoolInfo?.academicYear || '២០២៦ - ២០២៧'}
-              </p>
-            </div>
+            {/* Official Header Block */}
+            <OfficialPrintHeader
+              schoolInfo={schoolInfo}
+              printConfig={officePrintConfig}
+              title="កិច្ចតែងការបង្រៀន (LESSON PLAN)"
+              subTitle1={`កម្រិតថ្នាក់៖ ${lesson.grade} | មុខវិជ្ជា៖ ${lesson.subject} | ឆ្នាំសិក្សា៖ ${schoolInfo?.academicYear || '២០២៦ - ២០២៧'}`}
+              subTitle2={`គ្រូបង្រៀន៖ ${schoolInfo?.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'} | ឆមាស/ខែ៖ ${lesson.semester} (${lesson.monthName})`}
+            />
+
 
             {/* Meta Table */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs print:bg-white print:border-slate-400">

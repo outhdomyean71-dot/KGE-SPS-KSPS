@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { LessonPlan, SchoolInfo, GradeLevel, Semester, SubjectType } from '../types';
+import { LessonPlan, SchoolInfo, GradeLevel, Semester, SubjectType, OfficePrintConfig } from '../types';
 import { Printer, Download, ArrowLeft, SlidersHorizontal, RotateCcw, FileCode } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
+import { OfficialPrintHeader } from './OfficialPrintHeader';
+import { OfficePrintLayoutControl } from './OfficePrintLayoutControl';
 import { printDocument, downloadElementAsHTML } from '../utils/exportUtils';
+
 
 interface PrintPlannerViewProps {
   lessons: LessonPlan[];
@@ -32,6 +35,12 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
   const [showSignatures, setShowSignatures] = useState<boolean>(true);
   const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('landscape');
 
+  const [officePrintConfig, setOfficePrintConfig] = useState<OfficePrintConfig>({
+    colorMode: 'official',
+    spacingMode: 'standard',
+    fontSize: 'normal',
+  });
+
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(true);
 
   const handlePrint = () => {
@@ -50,7 +59,35 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
     setShowCustomNotes(true);
     setShowSignatures(true);
     setPaperOrientation('landscape');
+    setOfficePrintConfig({
+      colorMode: 'official',
+      spacingMode: 'standard',
+      fontSize: 'normal',
+    });
   };
+
+  // Helper classes derived from Office Print Config
+  const cellPaddingClass =
+    officePrintConfig.spacingMode === 'compact'
+      ? 'p-1 leading-tight text-[10px]'
+      : officePrintConfig.spacingMode === 'spacious'
+      ? 'p-3 leading-loose text-xs'
+      : 'p-2 leading-relaxed text-[11px]';
+
+  const headerBgClass =
+    officePrintConfig.colorMode === 'monochrome'
+      ? 'bg-gray-200 text-black border-black'
+      : officePrintConfig.colorMode === 'navy'
+      ? 'bg-indigo-950 text-white border-indigo-950'
+      : 'bg-slate-100 text-slate-900 border-slate-900';
+
+  const tableBorderClass =
+    officePrintConfig.colorMode === 'monochrome'
+      ? 'border-black'
+      : officePrintConfig.colorMode === 'navy'
+      ? 'border-indigo-900'
+      : 'border-slate-900';
+
 
   return (
     <div className="max-w-6xl mx-auto my-6 p-4">
@@ -114,7 +151,10 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
             </button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Office Print Layout Control */}
+            <OfficePrintLayoutControl config={officePrintConfig} onChange={setOfficePrintConfig} />
+
             {/* Paper Orientation Radio Selector */}
             <div className="flex items-center gap-3 bg-indigo-950/80 p-2.5 rounded-lg border border-indigo-800 text-xs">
               <span className="font-bold text-amber-300">ទិសដៅក្រដាស (Paper Layout)៖</span>
@@ -228,90 +268,61 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
       {/* Official Print Preview Container */}
       <div id="printable-annual-planner" className="bg-white p-6 md:p-10 shadow-lg rounded-xl border border-slate-200 print:shadow-none print:border-none print:p-0">
         
-        {/* National Header Block matching official MoEYS Kingdom template */}
-        <div className="mb-6 space-y-4 border-b-2 border-slate-900 pb-4">
-          <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-900 leading-relaxed gap-4">
-            {/* Left Column: Ministry and School Information */}
-            <div className="text-left space-y-0.5 shrink-0">
-              <p className="font-moul text-xs text-slate-900">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-              <p className="font-bold text-slate-800">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-              <p className="font-bold text-amber-900">{schoolInfo.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
-            </div>
-            
-            {/* Center Logo */}
-            {showLogo && (
-              <div className="flex flex-col items-center justify-center shrink-0">
-                <SovannaphumiLogo className="w-14 h-14" size={56} />
-              </div>
-            )}
-
-            {/* Right Column: Kingdom Motto */}
-            <div className="text-right space-y-0.5 shrink-0">
-              <p className="font-moul text-xs text-slate-900">ព្រះរាជាណាចក្រកម្ពុជា</p>
-              <p className="font-moul text-xs text-slate-900">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
-              <div className="w-20 h-0.5 bg-slate-900 ml-auto my-1"></div>
-            </div>
-          </div>
-
-          {/* Centered Document Title */}
-          <div className="text-center pt-2">
-            <h1 className="font-moul text-base md:text-lg text-slate-900 uppercase">
-              ផែនការបង្រៀន និងកម្មវិធីសិក្សាប្រចាំឆ្នាំ (១ឆ្នាំពេញ)
-            </h1>
-            <p className="text-xs text-slate-800 font-bold mt-1">
-              កម្រិតថ្នាក់៖ {selectedGrade} | ឆ្នាំសិក្សា {schoolInfo.academicYear || '២០២៦ - ២០២៧'} | គ្រូបន្ទុកថ្នាក់៖ {schoolInfo.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}
-            </p>
-            <p className="text-[11px] text-slate-600 font-medium mt-0.5">
-              មុខវិជ្ជា៖ {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | {selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}
-            </p>
-          </div>
-        </div>
+        {/* Official National Header Block matching MoEYS template */}
+        <OfficialPrintHeader
+          schoolInfo={schoolInfo}
+          showLogo={showLogo}
+          printConfig={officePrintConfig}
+          title="ផែនការបង្រៀន និងកម្មវិធីសិក្សាប្រចាំឆ្នាំ (១ឆ្នាំពេញ)"
+          subTitle1={`កម្រិតថ្នាក់៖ ${selectedGrade} | ឆ្នាំសិក្សា ${schoolInfo.academicYear || '២០២៦ - ២០២៧'} | គ្រូបន្ទុកថ្នាក់៖ ${schoolInfo.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}`}
+          subTitle2={`មុខវិជ្ជា៖ ${selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | ${selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}`}
+        />
 
         {/* Printable Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse border border-slate-900 text-xs">
+          <table className={`w-full text-left border-collapse border ${tableBorderClass}`}>
             <thead>
-              <tr className="bg-slate-100 text-slate-900 font-bold border-b border-slate-900 text-[11px]">
-                <th className="border border-slate-900 p-2 text-center w-20">ខែសិក្សា</th>
-                <th className="border border-slate-900 p-2 w-28">មុខវិជ្ជា</th>
-                <th className="border border-slate-900 p-2 w-44">ចំណងជើងមេរៀន / ជំពូក</th>
+              <tr className={`${headerBgClass} font-bold border-b ${tableBorderClass}`}>
+                <th className={`border ${tableBorderClass} ${cellPaddingClass} text-center w-20`}>ខែសិក្សា</th>
+                <th className={`border ${tableBorderClass} ${cellPaddingClass} w-28`}>មុខវិជ្ជា</th>
+                <th className={`border ${tableBorderClass} ${cellPaddingClass} w-44`}>ចំណងជើងមេរៀន / ជំពូក</th>
                 {showObjectives && (
-                  <th className="border border-slate-900 p-2">វត្ថុបំណងនៃមេរៀន (គោលដៅសិស្សត្រូវចេះ)</th>
+                  <th className={`border ${tableBorderClass} ${cellPaddingClass}`}>វត្ថុបំណងនៃមេរៀន (គោលដៅសិស្សត្រូវចេះ)</th>
                 )}
                 {showTeachingAids && (
-                  <th className="border border-slate-900 p-2 w-32">សម្ភារឧបទេស</th>
+                  <th className={`border ${tableBorderClass} ${cellPaddingClass} w-32`}>សម្ភារឧបទេស</th>
                 )}
                 {showAssessment && (
-                  <th className="border border-slate-900 p-2 w-32">ការវាយតម្លៃ</th>
+                  <th className={`border ${tableBorderClass} ${cellPaddingClass} w-32`}>ការវាយតម្លៃ</th>
                 )}
                 {showCustomNotes && (
-                  <th className="border border-slate-900 p-2 w-32">កំណត់ចំណាំ</th>
+                  <th className={`border ${tableBorderClass} ${cellPaddingClass} w-32`}>កំណត់ចំណាំ</th>
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-900 text-[11px] text-slate-900">
+            <tbody className={`divide-y ${tableBorderClass} text-slate-900`}>
               {lessons.map((lesson) => (
                 <tr key={lesson.id} className="align-top">
-                  <td className="border border-slate-900 p-2 text-center font-bold">
+                  <td className={`border ${tableBorderClass} ${cellPaddingClass} text-center font-bold`}>
                     {lesson.monthName}
                     <div className="text-[10px] text-slate-600 font-normal">({lesson.hoursAllocated} ម៉ោង)</div>
                   </td>
-                  <td className="border border-slate-900 p-2 font-bold">
+                  <td className={`border ${tableBorderClass} ${cellPaddingClass} font-bold`}>
                     {lesson.subject}
                   </td>
-                  <td className="border border-slate-900 p-2">
+                  <td className={`border ${tableBorderClass} ${cellPaddingClass}`}>
                     <p className="font-bold">{lesson.chapterTitle}</p>
                     <p className="mt-0.5">{lesson.lessonTitle}</p>
                   </td>
                   {showObjectives && (
-                    <td className="border border-slate-900 p-2 space-y-1">
+                    <td className={`border ${tableBorderClass} ${cellPaddingClass} space-y-1`}>
                       <p><strong>• ចំណេះដឹង៖</strong> {lesson.objectives.knowledge}</p>
                       <p><strong>• បំណិន៖</strong> {lesson.objectives.skills}</p>
                       <p><strong>• ឥរិយាបថ៖</strong> {lesson.objectives.attitude}</p>
                     </td>
                   )}
                   {showTeachingAids && (
-                    <td className="border border-slate-900 p-2">
+                    <td className={`border ${tableBorderClass} ${cellPaddingClass}`}>
                       <ul className="list-disc list-inside">
                         {lesson.teachingAids.map((aid, idx) => (
                           <li key={idx}>{aid}</li>
@@ -320,7 +331,7 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
                     </td>
                   )}
                   {showAssessment && (
-                    <td className="border border-slate-900 p-2">
+                    <td className={`border ${tableBorderClass} ${cellPaddingClass}`}>
                       <ul className="list-disc list-inside">
                         {lesson.assessmentMethods?.map((method, idx) => (
                           <li key={idx}>{method}</li>
@@ -329,7 +340,7 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
                     </td>
                   )}
                   {showCustomNotes && (
-                    <td className="border border-slate-900 p-2 italic text-slate-700">
+                    <td className={`border ${tableBorderClass} ${cellPaddingClass} italic text-slate-700`}>
                       {lesson.customNotes || '-'}
                     </td>
                   )}

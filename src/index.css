@@ -9,6 +9,10 @@
   }
 }
 
+.font-moul {
+  font-family: 'Moul', 'Khmer OS Muol Light', serif !important;
+}
+
 @media print {
   body {
     background-color: white !important;

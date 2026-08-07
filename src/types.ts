@@ -81,3 +81,15 @@ export interface SchoolInfo {
   academicYear: string;
   clusterSchool?: string;
 }
+
+export type OfficePrintColorMode = 'official' | 'monochrome' | 'navy';
+export type OfficePrintSpacingMode = 'standard' | 'compact' | 'spacious';
+export type OfficePrintFontSize = 'normal' | 'small' | 'large';
+
+export interface OfficePrintConfig {
+  colorMode: OfficePrintColorMode;
+  spacingMode: OfficePrintSpacingMode;
+  fontSize: OfficePrintFontSize;
+  showWatermark?: boolean;
+}
+
