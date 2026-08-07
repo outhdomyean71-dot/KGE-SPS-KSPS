@@ -36,6 +36,15 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
     setImageGenerating(true);
     setImageError(null);
     try {
+      const step3Activity = fiveStepPlan?.steps?.find(s => s.stepNumber === 3)?.teacherActivities 
+        || fiveStepPlan?.steps?.[2]?.teacherActivities || '';
+      const studentActivity = fiveStepPlan?.steps?.find(s => s.stepNumber === 3)?.studentActivities
+        || fiveStepPlan?.steps?.[2]?.studentActivities || '';
+      const questionsList = worksheet?.questions?.map(q => q.question).filter(Boolean).slice(0, 4).join('; ') || '';
+      const objectivesText = fiveStepPlan?.objectives?.knowledge || lesson.objectives?.knowledge || '';
+
+      const activitiesText = [step3Activity, studentActivity, objectivesText].filter(Boolean).join('. ');
+
       const res = await fetch('/api/gemini/generate-activity-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,11 +53,26 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
           subject: lesson.subject,
           grade: lesson.grade,
           customPrompt: customPrompt || '',
+          activitiesText,
+          questionsText: questionsList,
         }),
       });
       const data = await res.json();
       if (data.success && data.imageUrl) {
-        setFiveStepPlan((prev) => (prev ? { ...prev, activityImageUrl: data.imageUrl } : null));
+        setFiveStepPlan((prev) => (prev ? { ...prev, activityImageUrl: data.imageUrl } : {
+          title: lesson.lessonTitle,
+          grade: lesson.grade,
+          subject: lesson.subject,
+          duration: '២ ម៉ោង (៨០ នាទី)',
+          teachingAids: lesson.teachingAids || ['សៀវភៅសិក្សាគោល'],
+          objectives: {
+            knowledge: lesson.objectives.knowledge,
+            skills: lesson.objectives.skills,
+            attitudes: lesson.objectives.attitude,
+          },
+          steps: [],
+          activityImageUrl: data.imageUrl,
+        }));
       } else {
         setImageError(data.error || 'មិនអាចបង្កើតរូបភាពបានទេ');
       }
