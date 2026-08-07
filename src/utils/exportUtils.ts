@@ -54,18 +54,7 @@ export function exportToHTML(
   if (type === 'plan' && planData) {
     bodyContent = `
       <div class="header-box">
-        <div class="moeys-header">
-          <div style="text-align: left;">
-            <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
-          </div>
-          <div style="text-align: center;">
-            <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ព្រះរាជាណាចក្រកម្ពុជា</p>
-            <p style="font-family: 'Moul', serif; font-size: 11px; margin: 2px 0 0 0; color: #0f172a;">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
-            <p style="margin: 2px 0 0 0; color: #0f172a; font-size: 11px;">═════ ❖ ═════</p>
-          </div>
-        </div>
+        <div class="logo-title">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</div>
         <h1>${planData.title}</h1>
         <div class="meta-grid">
           <div><strong>កម្រិតថ្នាក់៖</strong> ${planData.grade}</div>
@@ -149,18 +138,7 @@ export function exportToHTML(
   } else if (type === 'worksheet' && worksheetData) {
     bodyContent = `
       <div class="header-box">
-        <div class="moeys-header">
-          <div style="text-align: left;">
-            <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
-          </div>
-          <div style="text-align: center;">
-            <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ព្រះរាជាណាចក្រកម្ពុជា</p>
-            <p style="font-family: 'Moul', serif; font-size: 11px; margin: 2px 0 0 0; color: #0f172a;">ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
-            <p style="margin: 2px 0 0 0; color: #0f172a; font-size: 11px;">═════ ❖ ═════</p>
-          </div>
-        </div>
+        <div class="logo-title">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</div>
         <h1>${worksheetData.title}</h1>
         <p><strong>ការណែនាំ៖</strong> ${worksheetData.instructions}</p>
         <div class="meta-grid">

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, SchoolInfo } from '../types';
 import { X, Sparkles, CheckCircle2, Circle, Edit2, Save, BookOpen, Clock, Layers, Printer, ArrowLeft, School, FileText, Check, RefreshCw, CloudCheck } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
-import { OfficialPrintHeader } from './OfficialPrintHeader';
 
 interface LessonDetailModalProps {
   lesson: LessonPlan | null;
@@ -113,13 +112,19 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
           {/* Printable Document Content */}
           <div className="p-6 sm:p-10 overflow-y-auto text-slate-900 space-y-6 print:p-0 print:overflow-visible print:text-black">
             
-            {/* Official Header Block */}
-            <OfficialPrintHeader
-              schoolInfo={schoolInfo}
-              title="កិច្ចតែងការបង្រៀន (LESSON PLAN)"
-              subTitle1={`កម្រិតថ្នាក់៖ ${lesson.grade} | មុខវិជ្ជា៖ ${lesson.subject} | ឆ្នាំសិក្សា៖ ${schoolInfo?.academicYear || '២០២៦ - ២០២៧'}`}
-              subTitle2={`គ្រូបង្រៀន៖ ${schoolInfo?.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'} | ឆមាស/ខែ៖ ${lesson.semester} (${lesson.monthName})`}
-            />
+            {/* Header Block */}
+            <div className="text-center space-y-1.5 border-b-2 border-slate-800 pb-4">
+              <div className="flex flex-col items-center justify-center gap-1.5 text-xs font-bold text-slate-800 uppercase tracking-widest">
+                <SovannaphumiLogo className="w-12 h-12" size={48} />
+                <span>{schoolInfo?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</span>
+              </div>
+              <h1 className="text-xl font-extrabold text-slate-900 uppercase tracking-wide my-1">
+                កិច្ចតែងការបង្រៀន (LESSON PLAN)
+              </h1>
+              <p className="text-xs text-slate-600 font-medium">
+                {schoolInfo?.provinceDistrict || 'ខេត្តកំពង់ស្ពឺ'} — ឆ្នាំសិក្សា៖ {schoolInfo?.academicYear || '២០២៦ - ២០២៧'}
+              </p>
+            </div>
 
             {/* Meta Table */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs print:bg-white print:border-slate-400">

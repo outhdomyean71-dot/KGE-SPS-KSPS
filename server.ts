@@ -29,27 +29,32 @@ async function startServer() {
 
   // Helper function to execute Gemini requests with model fallback and automatic retry backoff
   const callGeminiWithFallback = async (params: { contents: any; config?: any }) => {
-    // Priority order of models for fast reliable generation: gemini-2.5-flash -> gemini-2.5-flash-lite -> gemini-3.6-flash -> gemini-3.1-flash-lite
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+    // Priority order of models: gemini-3.6-flash -> gemini-3.1-flash-lite
+    const modelsToTry = ['gemini-3.6-flash', 'gemini-3.1-flash-lite'];
     let lastError: any = null;
 
     for (const modelName of modelsToTry) {
-      try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: params.contents,
-          config: params.config,
-        });
-        return response;
-      } catch (err: any) {
-        lastError = err;
-        const errStr = String(err?.message || err || '');
-        const isRateLimit = err?.status === 429 || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('quota');
-        
-        // If not a rate limit, try next model or throw
-        if (!isRateLimit) {
-          // Continue to next model if model is not found or unsupported
-          continue;
+      // Try up to 2 times per model if rate limited
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: params.contents,
+            config: params.config,
+          });
+          return response;
+        } catch (err: any) {
+          console.warn(`Gemini attempt ${attempt + 1} error with model "${modelName}":`, err?.message || err);
+          lastError = err;
+          const errStr = String(err?.message || err || '');
+          const isRateLimit = err?.status === 429 || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('quota');
+          
+          if (!isRateLimit) {
+            throw err;
+          }
+
+          // Wait 2 seconds before retrying or switching models on 429
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
     }
@@ -520,9 +525,8 @@ ${customPrompt ? `- សំណូមពរបន្ថែមពីគ្រូប
 
   // API Endpoint: Generate Classroom Activity Illustration Image
   app.post('/api/gemini/generate-activity-image', async (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
     try {
-      const { lessonTitle, subject, grade, customPrompt, activitiesText, questionsText } = req.body || {};
+      const { lessonTitle, subject, grade, customPrompt, activitiesText, questionsText } = req.body;
 
       const prompt = buildEducationalImagePrompt(
         grade,
@@ -552,8 +556,8 @@ ${customPrompt ? `- សំណូមពរបន្ថែមពីគ្រូប
               const imageUrl = `data:image/jpeg;base64,${imageBytes}`;
               return res.json({ success: true, imageUrl, prompt });
             }
-          } catch (_imagenErr) {
-            // Silently fall through to pollinations stream
+          } catch (imagenErr: any) {
+            // Silently fallback if model not found on API key
           }
         }
       }
@@ -562,87 +566,14 @@ ${customPrompt ? `- សំណូមពរបន្ថែមពីគ្រូប
       const encodedPrompt = encodeURIComponent(prompt.slice(0, 1000));
       const fallbackUrl = `https://pollinations.ai/prompt/${encodedPrompt}?width=800&height=450&seed=${Math.floor(Math.random() * 100000)}&nologo=true`;
 
-      return res.json({ success: true, imageUrl: fallbackUrl, prompt });
+      res.json({ success: true, imageUrl: fallbackUrl, prompt });
     } catch (error: any) {
       console.error('Error generating activity image:', error);
       const encodedPrompt = encodeURIComponent(`Cambodian primary school children in classroom learning ${req.body?.subject || ''} ${req.body?.lessonTitle || ''}, high quality educational illustration`);
       const fallbackUrl = `https://pollinations.ai/prompt/${encodedPrompt}?width=800&height=450&seed=${Math.floor(Math.random() * 100000)}&nologo=true`;
-      return res.json({
+      res.json({
         success: true,
         imageUrl: fallbackUrl,
-      });
-    }
-  });
-
-  // API Endpoint: Khmer Spell Checker for Lesson Plan / Worksheet Content
-  app.post('/api/gemini/check-spelling', async (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    try {
-      const { contentType, content } = req.body || {};
-
-      if (!content) {
-        return res.status(400).json({ success: false, error: 'គ្មានទិន្នន័យមេរៀនសម្រាប់ពិនិត្យអក្ខរាវិរុទ្ធ' });
-      }
-
-      const systemInstruction = `អ្នកគឺជាអ្នកជំនាញអក្ខរាវិរុទ្ធ និងវេយ្យាករណ៍ភាសាខ្មែរផ្លូវការ នៃក្រសួងអប់រំ យុវជន និងកីឡា ផ្អែកលើវចនានុក្រមសម្ដេចព្រះសង្ឃរាជ ជួន ណាត (MoEYS Standard Khmer Orthography & Chuon Nath Dictionary Standards)។
-ភារកិច្ចរបស់អ្នក៖
-១. ពិនិត្យអក្ខរាវិរុទ្ធ ជើងអក្សរ ស្រះ វណ្ណយុត្តិ និងការប្រើប្រាស់ពាក្យខ្មែរ ក្នុងកិច្ចតែងការបង្រៀន ឬសន្លឹកកិច្ចការនេះ។
-២. ស្វែងរកពាក្យដែលសរសេរខុសអក្ខរាវិរុទ្ធ ឬប្រើខុសស្តង់ដារ។
-៣. ផ្តល់នូវទិន្នន័យកែតម្រូវត្រឹមត្រូវទាំងស្រុង (correctedData) តាមរចនាសម្ព័ន្ធដើម។`;
-
-      const userPrompt = `
-សូមពិនិត្យអក្ខរាវិរុទ្ធភាសាខ្មែរលើទិន្នន័យ ${contentType === 'plan' ? 'កិច្ចតែងការបង្រៀន ៥ជំហាន' : 'សន្លឹកកិច្ចការសិស្ស'} ខាងក្រោម៖
-
-${JSON.stringify(content, null, 2)}
-
-សូមឆ្លើយតបជាទម្រង់ JSON សុទ្ធ (Valid JSON ONLY) ដូចតទៅ៖
-{
-  "totalIssuesFound": 0,
-  "accuracyScore": 100,
-  "summary": "សង្ខេបលទ្ធផលពិនិត្យអក្ខរាវិរុទ្ធជាភាសាខ្មែរ...",
-  "corrections": [
-    {
-      "originalWord": "ពាក្យដែលសរសេរខុស",
-      "correctedWord": "ពាក្យដែលសរសេរត្រូវតាមវចនានុក្រមជួនណាត",
-      "context": "ឃ្លា ឬល្បះដែលមានពាក្យនោះ",
-      "explanation": "មូលហេតុ ឬច្បាប់អក្ខរាវិរុទ្ធនៃការកែ"
-    }
-  ],
-  "correctedData": { ...រចនាសម្ព័ន្ធទិន្នន័យដើមដែលបានកែសម្រួលអក្ខរាវិរុទ្ធរួចរាល់... }
-}
-`;
-
-      const response = await callGeminiWithFallback({
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        config: {
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          responseMimeType: 'application/json',
-          temperature: 0.1,
-        },
-      });
-
-      const text = response.text || '';
-      let parsed: any = null;
-      try {
-        parsed = JSON.parse(text);
-      } catch (_e) {
-        const cleanJson = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-        parsed = JSON.parse(cleanJson);
-      }
-
-      return res.json({
-        success: true,
-        totalIssuesFound: parsed?.totalIssuesFound ?? (parsed?.corrections?.length || 0),
-        accuracyScore: parsed?.accuracyScore ?? 98,
-        summary: parsed?.summary || 'បានពិនិត្យអក្ខរាវិរុទ្ធរួចរាល់។',
-        corrections: Array.isArray(parsed?.corrections) ? parsed.corrections : [],
-        correctedData: parsed?.correctedData || content,
-      });
-    } catch (error: any) {
-      console.error('Khmer spell check error:', error);
-      return res.json({
-        success: false,
-        error: 'មិនអាចពិនិត្យអក្ខរាវិរុទ្ធបានទេ សូមព្យាយាមម្តងទៀត',
       });
     }
   });
