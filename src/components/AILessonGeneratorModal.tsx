@@ -3,7 +3,7 @@ import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
 import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
-import { KingdomMottoHeader } from './KingdomMottoHeader';
+import { OfficialPrintHeader } from './OfficialPrintHeader';
 
 interface AILessonGeneratorModalProps {
   lesson: LessonPlan | null;
@@ -1034,35 +1034,10 @@ ${currentAppUrl}`;
             <div id="printable-lesson-plan" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
               
               {/* MoEYS Official Kingdom Header for Print */}
-              <div className="mb-6 space-y-4 border-b-2 border-slate-900 pb-4">
-                <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-900 leading-relaxed gap-2">
-                  {/* Left Column: Ministry and School Info */}
-                  <div className="text-left space-y-0.5 shrink-0">
-                    <p className="font-moul text-xs text-slate-900">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-                    <p className="font-bold text-slate-800">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-                    <p className="font-bold text-amber-900">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
-                  </div>
-
-                  {/* Center: School Logo */}
-                  <div className="flex flex-col items-center justify-center shrink-0">
-                    <SovannaphumiLogo className="w-14 h-14" size={56} />
-                  </div>
-
-                  {/* Right Column: Kingdom Motto */}
-                  <div className="shrink-0">
-                    <KingdomMottoHeader align="center" />
-                  </div>
-                </div>
-
-                <div className="text-center pt-2">
-                  <h1 className="font-moul text-base md:text-lg text-slate-900 uppercase">
-                    កិច្ចតែងការបង្រៀន (ទម្រង់ ៥ជំហាន) — {fiveStepPlan.title || lesson.lessonTitle}
-                  </h1>
-                  <p className="text-xs text-slate-700 font-bold mt-1">
-                    កម្រិតថ្នាក់៖ {fiveStepPlan.grade || lesson.grade} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧ | គ្រូបន្ទុកថ្នាក់៖ លោកគ្រូ / អ្នកគ្រូ
-                  </p>
-                </div>
-              </div>
+              <OfficialPrintHeader
+                title={`កិច្ចតែងការបង្រៀន (ទម្រង់ ៥ជំហាន) — ${fiveStepPlan.title || lesson.lessonTitle}`}
+                subTitle1={`កម្រិតថ្នាក់៖ ${fiveStepPlan.grade || lesson.grade} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧ | គ្រូបន្ទុកថ្នាក់៖ លោកគ្រូ / អ្នកគ្រូ`}
+              />
 
               {/* Lesson Metadata Banner */}
               <div className="p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-900">
@@ -1177,35 +1152,10 @@ ${currentAppUrl}`;
             <div id="printable-worksheet" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
               
               {/* MoEYS Official Kingdom Header for Print */}
-              <div className="mb-6 space-y-4 border-b-2 border-slate-900 pb-4">
-                <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-900 leading-relaxed gap-2">
-                  {/* Left Column: Ministry and School Info */}
-                  <div className="text-left space-y-0.5 shrink-0">
-                    <p className="font-moul text-xs text-slate-900">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-                    <p className="font-bold text-slate-800">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-                    <p className="font-bold text-amber-900">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
-                  </div>
-
-                  {/* Center: School Logo */}
-                  <div className="flex flex-col items-center justify-center shrink-0">
-                    <SovannaphumiLogo className="w-14 h-14" size={56} />
-                  </div>
-
-                  {/* Right Column: Kingdom Motto */}
-                  <div className="shrink-0">
-                    <KingdomMottoHeader align="center" />
-                  </div>
-                </div>
-
-                <div className="text-center pt-2">
-                  <h2 className="font-moul text-base md:text-lg text-slate-900 uppercase">
-                    {worksheet.title}
-                  </h2>
-                  <p className="text-xs text-slate-700 font-bold mt-1">
-                    កម្រិតថ្នាក់៖ {lesson.grade} | មុខវិជ្ជា៖ {lesson.subject} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧
-                  </p>
-                </div>
-              </div>
+              <OfficialPrintHeader
+                title={worksheet.title}
+                subTitle1={`កម្រិតថ្នាក់៖ ${lesson.grade} | មុខវិជ្ជា៖ ${lesson.subject} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧`}
+              />
 
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 flex flex-wrap items-center justify-between gap-3">
                 <div>
