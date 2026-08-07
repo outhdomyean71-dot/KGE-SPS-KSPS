@@ -3,6 +3,7 @@ import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
 import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
+import { KingdomMottoHeader } from './KingdomMottoHeader';
 
 interface AILessonGeneratorModalProps {
   lesson: LessonPlan | null;
@@ -19,9 +20,26 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [copiedJSON, setCopiedJSON] = useState<boolean>(false);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
   const [copiedShareText, setCopiedShareText] = useState<boolean>(false);
+
+  // Khmer Spell Checker State
+  const [spellChecking, setSpellChecking] = useState<boolean>(false);
+  const [spellCheckSuccessMsg, setSpellCheckSuccessMsg] = useState<string | null>(null);
+  const [spellCheckResult, setSpellCheckResult] = useState<{
+    totalIssuesFound: number;
+    accuracyScore: number;
+    summary: string;
+    corrections: Array<{
+      originalWord: string;
+      correctedWord: string;
+      context: string;
+      explanation: string;
+    }>;
+    correctedData: any;
+  } | null>(null);
   
   const [customPrompt, setCustomPrompt] = useState<string>('');
   const [teachingStyle, setTeachingStyle] = useState<string>('interactive');
@@ -57,7 +75,19 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
           questionsText: questionsList,
         }),
       });
-      const data = await res.json();
+
+      let data: any;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        // Fallback gracefully to dynamic prompt image if server returns non-JSON or HTML
+        const promptStr = `Cambodian primary school children learning ${lesson.subject} ${lesson.lessonTitle}, educational illustration`;
+        const encodedPrompt = encodeURIComponent(promptStr);
+        const fallbackUrl = `https://pollinations.ai/prompt/${encodedPrompt}?width=800&height=450&seed=${Math.floor(Math.random() * 100000)}&nologo=true`;
+        data = { success: true, imageUrl: fallbackUrl };
+      }
+
       if (data.success && data.imageUrl) {
         setFiveStepPlan((prev) => (prev ? { ...prev, activityImageUrl: data.imageUrl } : {
           title: lesson.lessonTitle,
@@ -77,7 +107,25 @@ export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
         setImageError(data.error || 'មិនអាចបង្កើតរូបភាពបានទេ');
       }
     } catch (err: any) {
-      setImageError(err?.message || 'កំហុសបណ្តាញ');
+      // Fallback gracefully on network error
+      const promptStr = `Cambodian primary school children learning ${lesson.subject} ${lesson.lessonTitle}, educational illustration`;
+      const encodedPrompt = encodeURIComponent(promptStr);
+      const fallbackUrl = `https://pollinations.ai/prompt/${encodedPrompt}?width=800&height=450&seed=${Math.floor(Math.random() * 100000)}&nologo=true`;
+      
+      setFiveStepPlan((prev) => (prev ? { ...prev, activityImageUrl: fallbackUrl } : {
+        title: lesson.lessonTitle,
+        grade: lesson.grade,
+        subject: lesson.subject,
+        duration: '២ ម៉ោង (៨០ នាទី)',
+        teachingAids: lesson.teachingAids || ['សៀវភៅសិក្សាគោល'],
+        objectives: {
+          knowledge: lesson.objectives.knowledge,
+          skills: lesson.objectives.skills,
+          attitudes: lesson.objectives.attitude,
+        },
+        steps: [],
+        activityImageUrl: fallbackUrl,
+      }));
     } finally {
       setImageGenerating(false);
     }
@@ -310,6 +358,90 @@ ${showAnswers ? `* ចម្លើយ៖ ${q.answerKey}` : '* ចម្លើយ
     );
   };
 
+  const handleCopyJSON = () => {
+    let exportData: any = null;
+    if (activeTab === 'plan' && fiveStepPlan) {
+      exportData = {
+        type: 'fiveStepPlan',
+        lessonTitle: lesson.lessonTitle,
+        grade: lesson.grade,
+        subject: lesson.subject,
+        chapterTitle: lesson.chapterTitle,
+        monthName: lesson.monthName,
+        fiveStepPlan,
+        exportedAt: new Date().toISOString(),
+      };
+    } else if (activeTab === 'worksheet' && worksheet) {
+      exportData = {
+        type: 'worksheet',
+        lessonTitle: lesson.lessonTitle,
+        grade: lesson.grade,
+        subject: lesson.subject,
+        worksheet,
+        exportedAt: new Date().toISOString(),
+      };
+    }
+
+    if (exportData) {
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      navigator.clipboard.writeText(jsonStr);
+      setCopiedJSON(true);
+      setTimeout(() => setCopiedJSON(false), 2000);
+    }
+  };
+
+  const handleCheckSpelling = async () => {
+    const currentContent = activeTab === 'plan' ? fiveStepPlan : worksheet;
+    if (!currentContent) return;
+
+    setSpellChecking(true);
+    setError(null);
+    setSpellCheckResult(null);
+    setSpellCheckSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/gemini/check-spelling', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentType: activeTab,
+          content: currentContent,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSpellCheckResult({
+          totalIssuesFound: data.totalIssuesFound || 0,
+          accuracyScore: data.accuracyScore || 100,
+          summary: data.summary || 'បានពិនិត្យអក្ខរាវិរុទ្ធរួចរាល់។',
+          corrections: data.corrections || [],
+          correctedData: data.correctedData,
+        });
+      } else {
+        setError(data.error || 'មិនអាចពិនិត្យអក្ខរាវិរុទ្ធបានទេ');
+      }
+    } catch (_err) {
+      setError('កំហុសបណ្តាញក្នុងការពិនិត្យអក្ខរាវិរុទ្ធ');
+    } finally {
+      setSpellChecking(false);
+    }
+  };
+
+  const handleApplySpellCheckCorrections = () => {
+    if (!spellCheckResult?.correctedData) return;
+
+    if (activeTab === 'plan') {
+      setFiveStepPlan(spellCheckResult.correctedData);
+    } else {
+      setWorksheet(spellCheckResult.correctedData);
+    }
+
+    setSpellCheckSuccessMsg('បានអនុវត្តការកែតម្រូវអក្ខរាវិរុទ្ធទាំងអស់រួចរាល់ដោយជោគជ័យ!');
+    setTimeout(() => setSpellCheckSuccessMsg(null), 4000);
+    setSpellCheckResult(null);
+  };
+
   const getShareSummaryText = () => {
     if (!lesson) return '';
     const currentAppUrl = window.location.href;
@@ -518,6 +650,17 @@ ${currentAppUrl}`;
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Khmer Spell Checker Button */}
+            <button
+              onClick={handleCheckSpelling}
+              disabled={spellChecking || loading || (!fiveStepPlan && !worksheet)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+              title="ពិនិត្យអក្ខរាវិរុទ្ធភាសាខ្មែរតាមស្តង់ដារវចនានុក្រមជួនណាត"
+            >
+              <CheckCircle2 className={`w-3.5 h-3.5 text-teal-100 ${spellChecking ? 'animate-spin' : ''}`} />
+              <span>{spellChecking ? 'កំពុងពិនិត្យ...' : 'ពិនិត្យអក្ខរាវិរុទ្ធមេរៀន'}</span>
+            </button>
+
             {/* Import File Button */}
             <button
               onClick={handleImportClick}
@@ -541,10 +684,25 @@ ${currentAppUrl}`;
               onClick={handleExportJSON}
               disabled={loading || (!fiveStepPlan && !worksheet)}
               className="flex items-center gap-1 px-3 py-1.5 bg-purple-50 border border-purple-200 hover:bg-purple-100 text-purple-900 text-xs font-bold rounded-lg transition-all cursor-pointer disabled:opacity-50"
-              title="ទាញយកជា JSON"
+              title="ទាញយកជា JSON (Download JSON)"
             >
               <FileJson className="w-3.5 h-3.5 text-purple-700" />
-              <span>JSON</span>
+              <span>ទាញយក JSON</span>
+            </button>
+
+            {/* Copy Lesson Data as JSON */}
+            <button
+              onClick={handleCopyJSON}
+              disabled={loading || (!fiveStepPlan && !worksheet)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-purple-100/90 border border-purple-300 hover:bg-purple-200 text-purple-950 text-xs font-bold rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              title="ចម្លងទិន្នន័យមេរៀនជា JSON ទៅកាន់ Clipboard"
+            >
+              {copiedJSON ? (
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-purple-700" />
+              )}
+              <span>{copiedJSON ? 'បានចម្លង JSON!' : 'ចម្លងទិន្នន័យមេរៀនជា JSON'}</span>
             </button>
 
             {/* Copy Text */}
@@ -632,6 +790,109 @@ ${currentAppUrl}`;
               >
                 <X className="w-3.5 h-3.5" />
               </button>
+            </div>
+          )}
+
+          {/* Spell Check Success Toast Banner */}
+          {spellCheckSuccessMsg && (
+            <div className="p-3 bg-teal-50 border border-teal-300 rounded-xl flex items-center justify-between text-teal-950 text-xs font-bold shadow-2xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-teal-700 shrink-0" />
+                <span>{spellCheckSuccessMsg}</span>
+              </div>
+              <button
+                onClick={() => setSpellCheckSuccessMsg(null)}
+                className="p-1 hover:bg-teal-100 rounded text-teal-800 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Spell Check Results Box */}
+          {spellCheckResult && (
+            <div className="p-4 bg-teal-50/90 border-2 border-teal-300 rounded-xl space-y-3 text-slate-800 shadow-sm">
+              <div className="flex items-center justify-between border-b border-teal-200 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-teal-600 text-white rounded-lg">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-teal-950 flex items-center gap-2">
+                      <span>លទ្ធផលនៃការពិនិត្យអក្ខរាវិរុទ្ធភាសាខ្មែរ</span>
+                      <span className="px-2 py-0.5 bg-teal-200 text-teal-900 rounded-full text-[11px] font-bold">
+                        ភាពត្រឹមត្រូវ {spellCheckResult.accuracyScore}%
+                      </span>
+                    </h3>
+                    <p className="text-xs text-teal-800 font-medium mt-0.5">
+                      {spellCheckResult.summary}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSpellCheckResult(null)}
+                  className="p-1.5 text-teal-700 hover:text-teal-950 hover:bg-teal-200/60 rounded-lg cursor-pointer transition-colors"
+                  title="បិទ"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Corrections List */}
+              {spellCheckResult.corrections && spellCheckResult.corrections.length > 0 ? (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  <p className="text-xs font-bold text-teal-950">បញ្ជីពាក្យដែលបានរកឃើញ និងសំណើកែតម្រូវ (តាមស្តង់ដារវចនានុក្រមជួនណាត)៖</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {spellCheckResult.corrections.map((corr, idx) => (
+                      <div key={idx} className="p-2.5 bg-white border border-teal-200 rounded-lg space-y-1 text-xs shadow-2xs">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="line-through text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-bold">
+                            {corr.originalWord}
+                          </span>
+                          <span className="text-slate-400">➔</span>
+                          <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-200">
+                            {corr.correctedWord}
+                          </span>
+                        </div>
+                        {corr.context && (
+                          <p className="text-[11px] text-slate-600 italic">
+                            « {corr.context} »
+                          </p>
+                        )}
+                        {corr.explanation && (
+                          <p className="text-[11px] text-teal-800 font-medium">
+                            • {corr.explanation}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-100/80 border border-emerald-300 rounded-lg text-emerald-900 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                  <span>អបអរសាទរ! មិនមានពាក្យខុសអក្ខរាវិរុទ្ធនៅក្នុងមេរៀននេះទេ (អក្ខរាវិរុទ្ធត្រឹមត្រូវ ១០០%)។</span>
+                </div>
+              )}
+
+              {/* Footer Action Buttons */}
+              {spellCheckResult.corrections && spellCheckResult.corrections.length > 0 && (
+                <div className="flex items-center justify-end gap-2 pt-1 border-t border-teal-200">
+                  <button
+                    onClick={() => setSpellCheckResult(null)}
+                    className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-lg cursor-pointer"
+                  >
+                    រំលង
+                  </button>
+                  <button
+                    onClick={handleApplySpellCheckCorrections}
+                    className="px-4 py-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-lg shadow-xs cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-teal-200" />
+                    <span>អនុវត្តការកែប្រែទាំងអស់ (Apply All Corrections)</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
           
@@ -772,35 +1033,34 @@ ${currentAppUrl}`;
           {!loading && !error && activeTab === 'plan' && fiveStepPlan && (
             <div id="printable-lesson-plan" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
               
-              {/* MoEYS Official National Header for Print */}
-              <div className="mb-6 space-y-4 border-b-2 border-slate-800 pb-4">
-                <div className="text-center space-y-1">
-                  <div className="flex justify-center mb-1">
+              {/* MoEYS Official Kingdom Header for Print */}
+              <div className="mb-6 space-y-4 border-b-2 border-slate-900 pb-4">
+                <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-900 leading-relaxed gap-2">
+                  {/* Left Column: Ministry and School Info */}
+                  <div className="text-left space-y-0.5 shrink-0">
+                    <p className="font-moul text-xs text-slate-900">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
+                    <p className="font-bold text-slate-800">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
+                    <p className="font-bold text-amber-900">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
+                  </div>
+
+                  {/* Center: School Logo */}
+                  <div className="flex flex-col items-center justify-center shrink-0">
                     <SovannaphumiLogo className="w-14 h-14" size={56} />
                   </div>
-                  <h2 className="text-base font-bold text-slate-900 tracking-wide">
-                    សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
-                  </h2>
-                  <div className="w-28 h-0.5 bg-amber-500 mx-auto my-1.5"></div>
-                </div>
 
-                <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-800 pt-1 leading-relaxed">
-                  <div className="text-left space-y-0.5">
-                    <p>ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-                    <p>មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-                    <p>សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
-                  </div>
-                  <div className="text-right space-y-0.5">
-                    <p>កម្រិតថ្នាក់៖ <strong className="font-bold">{fiveStepPlan.grade || lesson.grade}</strong></p>
-                    <p>ឆ្នាំសិក្សា៖ <strong className="font-bold">២០២៦ - ២០២៧</strong></p>
-                    <p>គ្រូបន្ទុកថ្នាក់៖ <strong className="font-bold">លោកគ្រូ / អ្នកគ្រូ</strong></p>
+                  {/* Right Column: Kingdom Motto */}
+                  <div className="shrink-0">
+                    <KingdomMottoHeader align="center" />
                   </div>
                 </div>
 
                 <div className="text-center pt-2">
-                  <h1 className="text-base font-black text-slate-900 uppercase">
-                    កិច្ចតែងការបង្រៀន (៥ជំហាន) — {fiveStepPlan.title || lesson.lessonTitle}
+                  <h1 className="font-moul text-base md:text-lg text-slate-900 uppercase">
+                    កិច្ចតែងការបង្រៀន (ទម្រង់ ៥ជំហាន) — {fiveStepPlan.title || lesson.lessonTitle}
                   </h1>
+                  <p className="text-xs text-slate-700 font-bold mt-1">
+                    កម្រិតថ្នាក់៖ {fiveStepPlan.grade || lesson.grade} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧ | គ្រូបន្ទុកថ្នាក់៖ លោកគ្រូ / អ្នកគ្រូ
+                  </p>
                 </div>
               </div>
 
@@ -839,63 +1099,7 @@ ${currentAppUrl}`;
                 </div>
               </div>
 
-              {/* Classroom Activity Illustration Banner */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 avoid-break">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4.5 h-4.5 text-purple-600" />
-                    <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
-                      រូបភាពបង្ហាញពីសកម្មភាពគំរូក្នុងថ្នាក់រៀន (Sample Activity Illustration)
-                    </h4>
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={handleRegenerateImage}
-                    disabled={imageGenerating}
-                    className="no-print flex items-center gap-1.5 px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-900 text-[11px] font-bold rounded-lg border border-purple-200 transition-all cursor-pointer disabled:opacity-50"
-                    title="បង្កើតរូបភាពសកម្មភាពថ្មីដោយប្រើ Image Generation AI"
-                  >
-                    <Sparkles className={`w-3.5 h-3.5 text-purple-600 ${imageGenerating ? 'animate-spin' : ''}`} />
-                    <span>{imageGenerating ? 'កំពុងបង្កើត...' : 'បង្កើតរូបភាពថ្មី (Generate Image)'}</span>
-                  </button>
-                </div>
-
-                {imageError && (
-                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs">
-                    {imageError}
-                  </div>
-                )}
-
-                {fiveStepPlan.activityImageUrl ? (
-                  <div className="space-y-1.5">
-                    <div className="relative rounded-xl overflow-hidden border border-slate-300 shadow-xs bg-slate-900">
-                      <img
-                        src={fiveStepPlan.activityImageUrl}
-                        alt={`សកម្មភាពគំរូ៖ ${fiveStepPlan.title}`}
-                        referrerPolicy="no-referrer"
-                        className="w-full max-h-[380px] object-cover mx-auto"
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-500 text-center font-medium">
-                      🎨 រូបភាពសកម្មភាពគំរូក្នុងថ្នាក់រៀនស្របតាមមេរៀន «{fiveStepPlan.title || lesson.lessonTitle}»
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-6 bg-white border border-dashed border-slate-300 rounded-xl text-center space-y-2">
-                    <p className="text-xs text-slate-600 font-medium">មិនទាន់មានរូបភាពសកម្មភាពគំរូសម្រាប់មេរៀននេះនៅឡើយទេ</p>
-                    <button
-                      type="button"
-                      onClick={handleRegenerateImage}
-                      disabled={imageGenerating}
-                      className="no-print inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-all cursor-pointer"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>បង្កើតរូបភាពសកម្មភាពគំរូ (Generate Activity Image)</span>
-                    </button>
-                  </div>
-                )}
-              </div>
 
               {/* 5 Steps Accordion/Table */}
               <div className="space-y-4">
@@ -972,18 +1176,35 @@ ${currentAppUrl}`;
           {!loading && !error && activeTab === 'worksheet' && worksheet && (
             <div id="printable-worksheet" className="space-y-6 bg-white p-2 sm:p-4 rounded-xl">
               
-              {/* MoEYS Official National Header for Print */}
-              <div className="text-center space-y-1 mb-6 border-b-2 border-slate-800 pb-4">
-                <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
-                </p>
-                <p className="text-[11px] font-semibold text-slate-700">
-                  ក្រសួងអប់រំ យុវជន និងកីឡា | មន្ទីរអប់រំ យុវជន និងកីឡាខេត្តកំពង់ស្ពឺ
-                </p>
-                <div className="w-24 h-0.5 bg-emerald-600 mx-auto my-1.5"></div>
-                <h2 className="text-base font-black text-slate-900 uppercase pt-1">
-                  {worksheet.title}
-                </h2>
+              {/* MoEYS Official Kingdom Header for Print */}
+              <div className="mb-6 space-y-4 border-b-2 border-slate-900 pb-4">
+                <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-900 leading-relaxed gap-2">
+                  {/* Left Column: Ministry and School Info */}
+                  <div className="text-left space-y-0.5 shrink-0">
+                    <p className="font-moul text-xs text-slate-900">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
+                    <p className="font-bold text-slate-800">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
+                    <p className="font-bold text-amber-900">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
+                  </div>
+
+                  {/* Center: School Logo */}
+                  <div className="flex flex-col items-center justify-center shrink-0">
+                    <SovannaphumiLogo className="w-14 h-14" size={56} />
+                  </div>
+
+                  {/* Right Column: Kingdom Motto */}
+                  <div className="shrink-0">
+                    <KingdomMottoHeader align="center" />
+                  </div>
+                </div>
+
+                <div className="text-center pt-2">
+                  <h2 className="font-moul text-base md:text-lg text-slate-900 uppercase">
+                    {worksheet.title}
+                  </h2>
+                  <p className="text-xs text-slate-700 font-bold mt-1">
+                    កម្រិតថ្នាក់៖ {lesson.grade} | មុខវិជ្ជា៖ {lesson.subject} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧
+                  </p>
+                </div>
               </div>
 
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 flex flex-wrap items-center justify-between gap-3">

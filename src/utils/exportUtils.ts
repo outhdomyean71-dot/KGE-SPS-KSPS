@@ -680,8 +680,9 @@ function processElementImagesForExport(contentEl: HTMLElement, clonedContent: HT
 
 /**
  * Clean Print Action: Opens dedicated print window formatted cleanly for paper print or Save as PDF
+ * Supports orientation: 'portrait' | 'landscape' (default 'portrait')
  */
-export function printDocument(elementId: string, docTitle: string) {
+export function printDocument(elementId: string, docTitle: string, orientation: 'portrait' | 'landscape' = 'portrait') {
   const contentEl = document.getElementById(elementId);
   if (!contentEl) {
     window.print();
@@ -696,7 +697,7 @@ export function printDocument(elementId: string, docTitle: string) {
   // Ensure logo and images are converted to base64 or absolute URLs
   processElementImagesForExport(contentEl, clonedContent);
 
-  const printWindow = window.open('', '_blank', 'width=950,height=1100');
+  const printWindow = window.open('', '_blank', 'width=1000,height=1100');
   if (!printWindow) {
     // Fallback if popup blocker active
     window.print();
@@ -723,9 +724,9 @@ export function printDocument(elementId: string, docTitle: string) {
           color: #0f172a;
           background: #ffffff;
           margin: 0;
-          padding: 24px;
+          padding: 20px;
           line-height: 1.6;
-          font-size: 13px;
+          font-size: 12.5px;
         }
 
         .print-container {
@@ -744,11 +745,11 @@ export function printDocument(elementId: string, docTitle: string) {
           line-height: 1.3;
         }
 
-        .khmer-moul {
-          font-family: 'Moul', serif;
+        .khmer-moul, .font-moul {
+          font-family: 'Moul', 'Khmer OS Muol Light', serif !important;
         }
 
-        /* Prevent ugly page breaks */
+        /* Prevent ugly page breaks across tables & cards */
         .step-card, .question-card, tr, .avoid-break, .signature-block, .section-box {
           break-inside: avoid;
           page-break-inside: avoid;
@@ -761,17 +762,32 @@ export function printDocument(elementId: string, docTitle: string) {
           margin: 12px 0;
         }
 
+        thead {
+          display: table-header-group;
+        }
+
         th, td {
-          border: 1px solid #334155;
-          padding: 8px 10px;
+          border: 1px solid #1e293b;
+          padding: 6px 8px;
           text-align: left;
           vertical-align: top;
+          font-size: 11.5px;
         }
 
         th {
           background-color: #f1f5f9 !important;
           color: #0f172a;
           font-weight: 700;
+        }
+
+        /* MoEYS Kingdom Header Alignment */
+        .moeys-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #0f172a;
         }
 
         /* Card and Grid Helpers */
@@ -797,8 +813,8 @@ export function printDocument(elementId: string, docTitle: string) {
         .bg-slate-100 { background-color: #f1f5f9 !important; }
 
         @page {
-          size: A4 portrait;
-          margin: 12mm 15mm 15mm 15mm;
+          size: A4 ${orientation};
+          margin: 10mm 12mm 12mm 12mm;
         }
 
         @media print {
@@ -823,7 +839,7 @@ export function printDocument(elementId: string, docTitle: string) {
           setTimeout(() => {
             window.print();
             window.close();
-          }, 300);
+          }, 350);
         });
       </script>
     </body>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LessonPlan, SchoolInfo, GradeLevel, Semester, SubjectType } from '../types';
 import { Printer, Download, ArrowLeft, SlidersHorizontal, RotateCcw, FileCode } from 'lucide-react';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
+import { KingdomMottoHeader } from './KingdomMottoHeader';
 import { printDocument, downloadElementAsHTML } from '../utils/exportUtils';
 
 interface PrintPlannerViewProps {
@@ -30,11 +31,12 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
   const [showAssessment, setShowAssessment] = useState<boolean>(true);
   const [showCustomNotes, setShowCustomNotes] = useState<boolean>(true);
   const [showSignatures, setShowSignatures] = useState<boolean>(true);
+  const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('landscape');
 
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(true);
 
   const handlePrint = () => {
-    printDocument('printable-annual-planner', `ផែនការបង្រៀនប្រចាំឆ្នាំ - ${selectedGrade}`);
+    printDocument('printable-annual-planner', `ផែនការបង្រៀនប្រចាំឆ្នាំ - ${selectedGrade}`, paperOrientation);
   };
 
   const handleDownloadHTML = () => {
@@ -48,10 +50,11 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
     setShowAssessment(true);
     setShowCustomNotes(true);
     setShowSignatures(true);
+    setPaperOrientation('landscape');
   };
 
   return (
-    <div className="max-w-5xl mx-auto my-6 p-4">
+    <div className="max-w-6xl mx-auto my-6 p-4">
       {/* Top Action Bar (hidden when printing) */}
       <div className="print:hidden flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <button
@@ -112,128 +115,153 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
-            {/* Toggle Logo */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-              showLogo ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
-            }`}>
-              <input
-                type="checkbox"
-                checked={showLogo}
-                onChange={(e) => setShowLogo(e.target.checked)}
-                className="rounded accent-amber-400 cursor-pointer"
-              />
-              <span>ឡូហ្គោសាលា</span>
-            </label>
+          <div className="space-y-3">
+            {/* Paper Orientation Radio Selector */}
+            <div className="flex items-center gap-3 bg-indigo-950/80 p-2.5 rounded-lg border border-indigo-800 text-xs">
+              <span className="font-bold text-amber-300">ទិសដៅក្រដាស (Paper Layout)៖</span>
+              <label className="flex items-center gap-1.5 cursor-pointer font-medium">
+                <input
+                  type="radio"
+                  name="paperOrientation"
+                  value="landscape"
+                  checked={paperOrientation === 'landscape'}
+                  onChange={() => setPaperOrientation('landscape')}
+                  className="accent-amber-400"
+                />
+                <span>ក្រដាសផ្ដេក (Landscape - អនុសាសន៍សម្រាប់តារាង)</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer font-medium ml-3">
+                <input
+                  type="radio"
+                  name="paperOrientation"
+                  value="portrait"
+                  checked={paperOrientation === 'portrait'}
+                  onChange={() => setPaperOrientation('portrait')}
+                  className="accent-amber-400"
+                />
+                <span>ក្រដាសបញ្ឈរ (Portrait)</span>
+              </label>
+            </div>
 
-            {/* Toggle Objectives */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-              showObjectives ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
-            }`}>
-              <input
-                type="checkbox"
-                checked={showObjectives}
-                onChange={(e) => setShowObjectives(e.target.checked)}
-                className="rounded accent-amber-400 cursor-pointer"
-              />
-              <span>វត្ថុបំណង</span>
-            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-xs">
+              {/* Toggle Logo */}
+              <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                showLogo ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={showLogo}
+                  onChange={(e) => setShowLogo(e.target.checked)}
+                  className="rounded accent-amber-400 cursor-pointer"
+                />
+                <span>ឡូហ្គោសាលា</span>
+              </label>
 
-            {/* Toggle Teaching Aids */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-              showTeachingAids ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
-            }`}>
-              <input
-                type="checkbox"
-                checked={showTeachingAids}
-                onChange={(e) => setShowTeachingAids(e.target.checked)}
-                className="rounded accent-amber-400 cursor-pointer"
-              />
-              <span>សម្ភារឧបទេស</span>
-            </label>
+              {/* Toggle Objectives */}
+              <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                showObjectives ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={showObjectives}
+                  onChange={(e) => setShowObjectives(e.target.checked)}
+                  className="rounded accent-amber-400 cursor-pointer"
+                />
+                <span>វត្ថុបំណង</span>
+              </label>
 
-            {/* Toggle Assessment */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-              showAssessment ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
-            }`}>
-              <input
-                type="checkbox"
-                checked={showAssessment}
-                onChange={(e) => setShowAssessment(e.target.checked)}
-                className="rounded accent-amber-400 cursor-pointer"
-              />
-              <span>ការវាយតម្លៃ</span>
-            </label>
+              {/* Toggle Teaching Aids */}
+              <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                showTeachingAids ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={showTeachingAids}
+                  onChange={(e) => setShowTeachingAids(e.target.checked)}
+                  className="rounded accent-amber-400 cursor-pointer"
+                />
+                <span>សម្ភារឧបទេស</span>
+              </label>
 
-            {/* Toggle Custom Notes */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-              showCustomNotes ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
-            }`}>
-              <input
-                type="checkbox"
-                checked={showCustomNotes}
-                onChange={(e) => setShowCustomNotes(e.target.checked)}
-                className="rounded accent-amber-400 cursor-pointer"
-              />
-              <span>កំណត់ចំណាំ</span>
-            </label>
+              {/* Toggle Assessment */}
+              <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                showAssessment ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={showAssessment}
+                  onChange={(e) => setShowAssessment(e.target.checked)}
+                  className="rounded accent-amber-400 cursor-pointer"
+                />
+                <span>ការវាយតម្លៃ</span>
+              </label>
 
-            {/* Toggle Signatures */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-              showSignatures ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
-            }`}>
-              <input
-                type="checkbox"
-                checked={showSignatures}
-                onChange={(e) => setShowSignatures(e.target.checked)}
-                className="rounded accent-amber-400 cursor-pointer"
-              />
-              <span>ប្លុកហត្ថលេខា</span>
-            </label>
+              {/* Toggle Custom Notes */}
+              <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                showCustomNotes ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={showCustomNotes}
+                  onChange={(e) => setShowCustomNotes(e.target.checked)}
+                  className="rounded accent-amber-400 cursor-pointer"
+                />
+                <span>កំណត់ចំណាំ</span>
+              </label>
+
+              {/* Toggle Signatures */}
+              <label className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
+                showSignatures ? 'bg-indigo-900/80 border-amber-400 text-white font-bold' : 'bg-slate-800/50 border-slate-700 text-slate-400'
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={showSignatures}
+                  onChange={(e) => setShowSignatures(e.target.checked)}
+                  className="rounded accent-amber-400 cursor-pointer"
+                />
+                <span>ប្លុកហត្ថលេខា</span>
+              </label>
+            </div>
           </div>
         </div>
       )}
 
       {/* Official Print Preview Container */}
-      <div id="printable-annual-planner" className="bg-white p-8 md:p-12 shadow-lg rounded-xl border border-slate-200 print:shadow-none print:border-none print:p-0">
+      <div id="printable-annual-planner" className="bg-white p-6 md:p-10 shadow-lg rounded-xl border border-slate-200 print:shadow-none print:border-none print:p-0">
         
-        {/* National Header Block matching official template */}
-        <div className="mb-6 space-y-4">
-          {/* Top Center: Logo and School Name */}
-          <div className="text-center space-y-1">
-            {showLogo && (
-              <div className="flex justify-center mb-2">
-                <SovannaphumiLogo className="w-16 h-16" size={64} />
-              </div>
-            )}
-            <h2 className="text-base md:text-lg font-bold text-slate-900 tracking-wide">
-              សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
-            </h2>
-            <div className="w-28 h-0.5 bg-amber-500 mx-auto my-1.5"></div>
-          </div>
-
-          {/* Left and Right Info Columns */}
-          <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-800 pt-2 leading-relaxed">
-            <div className="text-left space-y-0.5">
-              <p>ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-              <p>មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-              <p>{schoolInfo.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
+        {/* National Header Block matching official MoEYS Kingdom template */}
+        <div className="mb-6 space-y-4 border-b-2 border-slate-900 pb-4">
+          <div className="flex flex-row items-start justify-between text-xs font-semibold text-slate-900 leading-relaxed gap-4">
+            {/* Left Column: Ministry and School Information */}
+            <div className="text-left space-y-0.5 shrink-0">
+              <p className="font-moul text-xs text-slate-900">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
+              <p className="font-bold text-slate-800">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
+              <p className="font-bold text-amber-900">{schoolInfo.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
             </div>
             
-            <div className="text-right space-y-0.5">
-              <p>កម្រិតថ្នាក់៖ <strong className="font-bold">{selectedGrade}</strong></p>
-              <p>ឆ្នាំសិក្សា៖ <strong className="font-bold">{schoolInfo.academicYear || '២០២៦ - ២០២៧'}</strong></p>
-              <p>គ្រូបន្ទុកថ្នាក់៖ <strong className="font-bold">{schoolInfo.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}</strong></p>
+            {/* Center Logo */}
+            {showLogo && (
+              <div className="flex flex-col items-center justify-center shrink-0">
+                <SovannaphumiLogo className="w-14 h-14" size={56} />
+              </div>
+            )}
+
+            {/* Right Column: Kingdom Motto */}
+            <div className="shrink-0">
+              <KingdomMottoHeader align="center" />
             </div>
           </div>
 
           {/* Centered Document Title */}
-          <div className="text-center pt-4 pb-2 border-b border-slate-300">
-            <h1 className="text-base md:text-xl font-bold text-slate-900">
-              ផែនការបង្រៀនប្រចាំឆ្នាំ (១ឆ្នាំពេញ)
+          <div className="text-center pt-2">
+            <h1 className="font-moul text-base md:text-lg text-slate-900 uppercase">
+              ផែនការបង្រៀន និងកម្មវិធីសិក្សាប្រចាំឆ្នាំ (១ឆ្នាំពេញ)
             </h1>
-            <p className="text-xs text-slate-700 font-bold mt-1">
-              សម្រាប់មុខវិជ្ជា៖ {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | {selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}
+            <p className="text-xs text-slate-800 font-bold mt-1">
+              កម្រិតថ្នាក់៖ {selectedGrade} | ឆ្នាំសិក្សា {schoolInfo.academicYear || '២០២៦ - ២០២៧'} | គ្រូបន្ទុកថ្នាក់៖ {schoolInfo.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}
+            </p>
+            <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+              មុខវិជ្ជា៖ {selectedSubjects.length === 5 ? 'គ្រប់មុខវិជ្ជាទាំងអស់' : selectedSubjects.join(', ')} | {selectedMonths.length === 10 ? '១០ខែពេញ' : `ចន្លោះខែទី${Math.min(...selectedMonths, 1)} ដល់ ខែទី${Math.max(...selectedMonths, 10)}`}
             </p>
           </div>
         </div>
