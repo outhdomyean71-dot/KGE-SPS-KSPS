@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LessonPlan, FiveStepLessonPlan, StudentWorksheet } from '../types';
 import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
+import { SovannaphumiLogo } from './SovannaphumiLogo';
 
 interface AILessonGeneratorModalProps {
   lesson: LessonPlan | null;
@@ -734,7 +735,7 @@ ${currentAppUrl}`;
                 <strong className="font-bold block text-sm mb-0.5">ការបង្កើតបរាជ័យ</strong>
                 <p>{error}</p>
                 <button
-                  onClick={handleGenerateLessonPlan}
+                  onClick={activeTab === 'plan' ? handleGenerateLessonPlan : handleGenerateWorksheet}
                   className="mt-2 text-xs text-red-700 underline font-bold cursor-pointer"
                 >
                   ព្យាយាមម្ដងទៀត
@@ -766,7 +767,7 @@ ${currentAppUrl}`;
                     <p>សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
                   </div>
                   <div className="text-right space-y-0.5">
-                    <p>កម្រិតថ្នាក់៖ <strong className="font-bold">{fiveStepPlan.grade}</strong></p>
+                    <p>កម្រិតថ្នាក់៖ <strong className="font-bold">{fiveStepPlan.grade || lesson.grade}</strong></p>
                     <p>ឆ្នាំសិក្សា៖ <strong className="font-bold">២០២៦ - ២០២៧</strong></p>
                     <p>គ្រូបន្ទុកថ្នាក់៖ <strong className="font-bold">លោកគ្រូ / អ្នកគ្រូ</strong></p>
                   </div>
@@ -774,7 +775,7 @@ ${currentAppUrl}`;
 
                 <div className="text-center pt-2">
                   <h1 className="text-base font-black text-slate-900 uppercase">
-                    កិច្ចតែងការបង្រៀន (៥ជំហាន) — {fiveStepPlan.title}
+                    កិច្ចតែងការបង្រៀន (៥ជំហាន) — {fiveStepPlan.title || lesson.lessonTitle}
                   </h1>
                 </div>
               </div>
@@ -782,9 +783,9 @@ ${currentAppUrl}`;
               {/* Lesson Metadata Banner */}
               <div className="p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-900">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                  <div><strong>កម្រិតថ្នាក់៖</strong> {fiveStepPlan.grade}</div>
-                  <div><strong>មុខវិជ្ជា៖</strong> {fiveStepPlan.subject}</div>
-                  <div><strong>រយៈពេល៖</strong> {fiveStepPlan.duration}</div>
+                  <div><strong>កម្រិតថ្នាក់៖</strong> {fiveStepPlan.grade || lesson.grade}</div>
+                  <div><strong>មុខវិជ្ជា៖</strong> {fiveStepPlan.subject || lesson.subject}</div>
+                  <div><strong>រយៈពេល៖</strong> {fiveStepPlan.duration || '២ ម៉ោង (៨០ នាទី)'}</div>
                   <div><strong>ខែសិក្សា៖</strong> {lesson.monthName}</div>
                 </div>
               </div>
@@ -797,20 +798,20 @@ ${currentAppUrl}`;
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="bg-white p-2.5 rounded-lg border border-slate-200">
                     <span className="font-bold text-blue-900 block mb-0.5">១. ចំណេះដឹង៖</span>
-                    <p className="text-slate-700">{fiveStepPlan.objectives.knowledge}</p>
+                    <p className="text-slate-700">{fiveStepPlan.objectives?.knowledge || lesson.objectives?.knowledge || 'យល់ដឹងពីខ្លឹមសារមេរៀន'}</p>
                   </div>
                   <div className="bg-white p-2.5 rounded-lg border border-slate-200">
                     <span className="font-bold text-emerald-900 block mb-0.5">២. បំណិន៖</span>
-                    <p className="text-slate-700">{fiveStepPlan.objectives.skills}</p>
+                    <p className="text-slate-700">{fiveStepPlan.objectives?.skills || lesson.objectives?.skills || 'អនុវត្ត និងដោះស្រាយលំហាត់បានត្រឹមត្រូវ'}</p>
                   </div>
                   <div className="bg-white p-2.5 rounded-lg border border-slate-200">
                     <span className="font-bold text-amber-900 block mb-0.5">៣. ឥរិយាបថ៖</span>
-                    <p className="text-slate-700">{fiveStepPlan.objectives.attitudes}</p>
+                    <p className="text-slate-700">{fiveStepPlan.objectives?.attitudes || lesson.objectives?.attitude || 'មានស្មារតីប្រុងប្រយ័ត្ន និងស្រឡាញ់ការសិក្សា'}</p>
                   </div>
                 </div>
 
                 <div className="pt-2 text-slate-700">
-                  <span className="font-bold text-slate-900">សម្ភារឧបទេស៖</span> {fiveStepPlan.teachingAids.join(', ')}
+                  <span className="font-bold text-slate-900">សម្ភារឧបទេស៖</span> {Array.isArray(fiveStepPlan.teachingAids) ? fiveStepPlan.teachingAids.join(', ') : (fiveStepPlan.teachingAids || 'សៀវភៅសិក្សាគោល, ក្តារខៀន')}
                 </div>
               </div>
 
@@ -853,7 +854,7 @@ ${currentAppUrl}`;
                       />
                     </div>
                     <p className="text-[11px] text-slate-500 text-center font-medium">
-                      🎨 រូបភាពសកម្មភាពគំរូក្នុងថ្នាក់រៀនស្របតាមមេរៀន «{fiveStepPlan.title}» បង្កើតដោយ Image Generation AI
+                      🎨 រូបភាពសកម្មភាពគំរូក្នុងថ្នាក់រៀនស្របតាមមេរៀន «{fiveStepPlan.title || lesson.lessonTitle}»
                     </p>
                   </div>
                 ) : (
@@ -878,14 +879,14 @@ ${currentAppUrl}`;
                   សកម្មភាពបង្រៀន ៥ ជំហាន (5-Step Pedagogical Process)
                 </h4>
 
-                {fiveStepPlan.steps.map((step) => (
-                  <div key={step.stepNumber} className="step-card bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                {(fiveStepPlan.steps || []).map((step, idx) => (
+                  <div key={step.stepNumber || idx + 1} className="step-card bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
                     <div className="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
                       <span className="font-bold text-slate-900 text-xs">
-                        {step.title}
+                        {step.title || `ជំហានទី${idx + 1}`}
                       </span>
                       <span className="text-[11px] font-semibold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
-                        {step.duration}
+                        {step.duration || '៥ នាទី'}
                       </span>
                     </div>
 
