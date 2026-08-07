@@ -739,7 +739,7 @@ export default function App() {
       <footer className="bg-gradient-to-r from-[#f5b335] via-[#ea9c28] to-[#f3a82c] text-slate-950 py-5 px-4 text-center text-xs border-t-2 border-amber-300 shadow-md mt-auto">
         <div className="max-w-7xl mx-auto space-y-1">
           <p className="font-extrabold text-amber-950 text-xs md:text-sm">
-            @2026 សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ
+            @2026 សាលារៀនសុវណ្ណភូមិ (Sovannaphumi School)
           </p>
           <p className="text-[15px] font-bold text-amber-900/90">
             រក្សាសិទ្ធិដោយ៖ លោកគ្រូ យៀន ឧត្តម
