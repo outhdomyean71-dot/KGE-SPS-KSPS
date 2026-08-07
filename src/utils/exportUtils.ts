@@ -1,5 +1,79 @@
 import PptxGenJS from 'pptxgenjs';
 import { FiveStepLessonPlan, StudentWorksheet, LessonPlan } from '../types';
+import { SOVANNAPHUMI_LOGO_DATA_URL } from '../assets/sovannaphumiLogo';
+
+/**
+ * Helper to generate HTML string for School / MoEYS Logo for exported HTML files
+ */
+function getLogoHtmlForExport(): string {
+  let logoSrc = '';
+  if (typeof document !== 'undefined') {
+    try {
+      const imgEl = document.querySelector('img[alt*="Logo"], img[alt*="Sovannaphumi"]') as HTMLImageElement;
+      if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = imgEl.naturalWidth;
+        canvas.height = imgEl.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(imgEl, 0, 0);
+          const dataUrl = canvas.toDataURL('image/png');
+          if (dataUrl && dataUrl.startsWith('data:image')) {
+            logoSrc = dataUrl;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not extract logo from canvas:', e);
+    }
+  }
+
+  if (!logoSrc && SOVANNAPHUMI_LOGO_DATA_URL) {
+    if (SOVANNAPHUMI_LOGO_DATA_URL.startsWith('data:')) {
+      logoSrc = SOVANNAPHUMI_LOGO_DATA_URL;
+    } else if (typeof window !== 'undefined') {
+      try {
+        logoSrc = new URL(SOVANNAPHUMI_LOGO_DATA_URL, window.location.href).href;
+      } catch (e) {
+        logoSrc = SOVANNAPHUMI_LOGO_DATA_URL;
+      }
+    } else {
+      logoSrc = SOVANNAPHUMI_LOGO_DATA_URL;
+    }
+  }
+
+  if (logoSrc) {
+    return `<img src="${logoSrc}" alt="Sovannaphumi School Logo" style="width: 56px; height: 56px; object-fit: contain; border-radius: 50%; display: block; margin: 0 auto; box-shadow: 0 2px 6px rgba(0,0,0,0.15);" />`;
+  }
+
+  return `
+    <svg width="56" height="56" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; margin: 0 auto;">
+      <defs>
+        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a" />
+          <stop offset="30%" stop-color="#f59e0b" />
+          <stop offset="70%" stop-color="#d97706" />
+          <stop offset="100%" stop-color="#b45309" />
+        </linearGradient>
+        <linearGradient id="centerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#0f766e" />
+          <stop offset="50%" stop-color="#0d9488" />
+          <stop offset="100%" stop-color="#115e59" />
+        </linearGradient>
+        <linearGradient id="bookGold" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#fef08a" />
+          <stop offset="100%" stop-color="#f59e0b" />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="url(#goldGradient)" />
+      <circle cx="50" cy="50" r="44" fill="#78350f" />
+      <circle cx="50" cy="50" r="42" fill="url(#centerGradient)" />
+      <path d="M50 66 C42 61 32 62 26 65 L26 44 C32 41 42 40 50 45 Z" fill="#ffffff" stroke="#f59e0b" stroke-width="1.5" />
+      <path d="M50 66 C58 61 68 62 74 65 L74 44 C68 41 58 40 50 45 Z" fill="#ffffff" stroke="#f59e0b" stroke-width="1.5" />
+      <line x1="50" y1="45" x2="50" y2="66" stroke="#d97706" stroke-width="2" />
+    </svg>
+  `;
+}
 
 /**
  * Clean helper to trigger file download in browser
@@ -49,6 +123,7 @@ export function exportToHTML(
   const safeTitle = title.replace(/[^\w\s\u1780-\u17FF]/g, '_') || 'Lesson_Plan';
   const fileName = `${safeTitle}_${type === 'plan' ? 'កិច្ចតែងការ' : 'សន្លឹកកិច្ចការ'}.html`;
 
+  const logoHtml = getLogoHtmlForExport();
   let bodyContent = '';
 
   if (type === 'plan' && planData) {
@@ -57,8 +132,11 @@ export function exportToHTML(
         <div class="moeys-header">
           <div style="text-align: left;">
             <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">${lessonInfo?.provinceDistrict || 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ'}</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">${lessonInfo?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
+          </div>
+          <div style="text-align: center; margin: 0 12px; flex: 0 0 auto;">
+            ${logoHtml}
           </div>
           <div style="text-align: center;">
             <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ព្រះរាជាណាចក្រកម្ពុជា</p>
@@ -152,8 +230,11 @@ export function exportToHTML(
         <div class="moeys-header">
           <div style="text-align: left;">
             <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">${lessonInfo?.provinceDistrict || 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ'}</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">${lessonInfo?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
+          </div>
+          <div style="text-align: center; margin: 0 12px; flex: 0 0 auto;">
+            ${logoHtml}
           </div>
           <div style="text-align: center;">
             <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ព្រះរាជាណាចក្រកម្ពុជា</p>
@@ -234,6 +315,14 @@ export function exportToHTML(
       border-bottom: 3px double #0284c7;
       padding-bottom: 20px;
       margin-bottom: 24px;
+    }
+    .moeys-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #0f172a;
     }
     .logo-title {
       font-family: 'Moul', serif;
