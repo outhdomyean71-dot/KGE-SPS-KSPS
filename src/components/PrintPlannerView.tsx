@@ -352,21 +352,26 @@ export const PrintPlannerView: React.FC<PrintPlannerViewProps> = ({
 
         {/* Signature Sign-off Block */}
         {showSignatures && (
-          <div className="mt-12 grid grid-cols-2 text-center text-xs text-slate-900 font-bold pt-4">
-            <div className="space-y-16">
-              <div>
-                <p>បានឃើញ និងឯកភាព</p>
-                <p className="uppercase mt-0.5">នាយកសាលាបឋមសិក្សា</p>
-              </div>
-              <p className="pt-8">...................................................</p>
+          <div className="mt-12 grid grid-cols-2 text-center text-xs text-slate-900 font-bold pt-4 signature-block">
+            <div className="space-y-1">
+              <p className="font-bold">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+              <p className="text-[11px] font-normal text-slate-700">ថ្ងៃ..................ខែ............ឆ្នាំ២០២...</p>
+              <p className="font-bold uppercase mt-1">នាយកសាលាបឋមសិក្សា</p>
+              <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា និងត្រា)</p>
+              <div className="h-16"></div>
+              <p className="pt-2 border-t border-slate-300 w-36 mx-auto font-bold text-slate-900">
+                ...................................
+              </p>
             </div>
 
-            <div className="space-y-16">
-              <div>
-                <p>ថ្ងៃ................ ខែ........... ឆ្នាំ២០២៦</p>
-                <p className="mt-0.5">គ្រូបន្ទុកថ្នាក់</p>
-              </div>
-              <p className="pt-8">{schoolInfo.teacherName}</p>
+            <div className="space-y-1">
+              <p className="text-[11px] font-normal text-slate-700">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២...</p>
+              <p className="font-bold uppercase mt-1">គ្រូបង្រៀនបន្ទុកថ្នាក់</p>
+              <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា)</p>
+              <div className="h-16"></div>
+              <p className="pt-2 border-t border-slate-300 w-36 mx-auto font-bold text-slate-900">
+                {schoolInfo.teacherName || '...................................'}
+              </p>
             </div>
           </div>
         )}

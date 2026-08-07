@@ -248,19 +248,24 @@ export const LessonDetailModal: React.FC<LessonDetailModalProps> = ({
             </div>
 
             {/* Signatures Block */}
-            <div className="pt-8 grid grid-cols-2 text-center text-xs font-semibold text-slate-800 gap-6 print:pt-12">
+            <div className="pt-8 grid grid-cols-2 text-center text-xs font-semibold text-slate-800 gap-6 print:pt-12 signature-block">
               <div className="space-y-1">
-                <p className="font-bold">បានឃើញ និងឯកភាព</p>
-                <p className="text-[11px] text-slate-600">នាយក-នាយិកាសាលា</p>
+                <p className="font-bold">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+                <p className="text-[11px] text-slate-600">ថ្ងៃ..................ខែ............ឆ្នាំ២០២...</p>
+                <p className="font-bold uppercase mt-1">នាយកសាលាបឋមសិក្សា</p>
+                <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា និងត្រា)</p>
                 <div className="h-16"></div>
-                <p className="border-t border-slate-300 w-32 mx-auto pt-1 font-normal text-slate-500">ហត្ថលេខា និងត្រា</p>
+                <p className="border-t border-slate-300 w-36 mx-auto pt-1 font-bold text-slate-900">
+                  ...................................
+                </p>
               </div>
 
               <div className="space-y-1">
-                <p>ថ្ងៃទី......... ខែ......... ឆ្នាំ២០២.....</p>
-                <p className="font-bold">គ្រូបង្រៀនទទួលបន្ទុក</p>
+                <p className="text-[11px] text-slate-600">ថ្ងៃទី......... ខែ......... ឆ្នាំ២០២.....</p>
+                <p className="font-bold uppercase mt-1">គ្រូបង្រៀនបន្ទុកថ្នាក់</p>
+                <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា)</p>
                 <div className="h-16"></div>
-                <p className="border-t border-slate-300 w-32 mx-auto pt-1 font-normal text-slate-800">
+                <p className="border-t border-slate-300 w-36 mx-auto pt-1 font-bold text-slate-900">
                   {schoolInfo?.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}
                 </p>
               </div>

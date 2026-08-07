@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LessonPlan, FiveStepLessonPlan, StudentWorksheet, OfficePrintConfig } from '../types';
+import { LessonPlan, FiveStepLessonPlan, StudentWorksheet, OfficePrintConfig, SchoolInfo } from '../types';
 import { Sparkles, X, Printer, Copy, Check, RefreshCw, FileText, BookOpen, AlertCircle, FileCode, Presentation, FileDown, Upload, FileJson, CheckCircle2, Users, Target, HelpCircle, Gamepad2, GraduationCap, Compass, Eye, EyeOff, Share2, Send, Mail, Link2, ExternalLink, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
 import { exportToHTML, exportToPowerPoint, exportToJSON, printDocument } from '../utils/exportUtils';
 import { SovannaphumiLogo } from './SovannaphumiLogo';
@@ -11,12 +11,14 @@ interface AILessonGeneratorModalProps {
   lesson: LessonPlan | null;
   isOpen: boolean;
   onClose: () => void;
+  schoolInfo?: SchoolInfo;
 }
 
 export const AILessonGeneratorModal: React.FC<AILessonGeneratorModalProps> = ({
   lesson,
   isOpen,
   onClose,
+  schoolInfo,
 }) => {
   const [activeTab, setActiveTab] = useState<'plan' | 'worksheet'>('plan');
   const [loading, setLoading] = useState<boolean>(false);
@@ -339,7 +341,7 @@ ${showAnswers ? `* ចម្លើយ៖ ${q.answerKey}` : '* ចម្លើយ
       activeTab,
       fiveStepPlan,
       worksheet,
-      lesson,
+      schoolInfo || lesson,
       showAnswers
     );
   };
@@ -1066,9 +1068,10 @@ ${currentAppUrl}`;
               
               {/* MoEYS Official Kingdom Header for Print */}
               <OfficialPrintHeader
+                schoolInfo={schoolInfo}
                 printConfig={officePrintConfig}
                 title={`កិច្ចតែងការបង្រៀន (ទម្រង់ ៥ជំហាន) — ${fiveStepPlan.title || lesson.lessonTitle}`}
-                subTitle1={`កម្រិតថ្នាក់៖ ${fiveStepPlan.grade || lesson.grade} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧ | គ្រូបន្ទុកថ្នាក់៖ លោកគ្រូ / អ្នកគ្រូ`}
+                subTitle1={`កម្រិតថ្នាក់៖ ${fiveStepPlan.grade || lesson.grade} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧ | គ្រូបន្ទុកថ្នាក់៖ ${schoolInfo?.teacherName || 'លោកគ្រូ / អ្នកគ្រូ'}`}
               />
 
               {/* Lesson Metadata Banner */}
@@ -1160,20 +1163,25 @@ ${currentAppUrl}`;
 
               {/* Signature Sign-off Block for Print */}
               <div className="pt-8 border-t border-slate-300 mt-8 grid grid-cols-2 text-center text-xs text-slate-900 font-bold signature-block">
-                <div className="space-y-12">
-                  <div>
-                    <p>បានឃើញ និងឯកភាព</p>
-                    <p className="uppercase mt-0.5">នាយកសាលាបឋមសិក្សា</p>
-                  </div>
-                  <p>...................................................</p>
+                <div className="space-y-1">
+                  <p className="font-bold">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+                  <p className="text-[11px] font-normal text-slate-700">ថ្ងៃ..................ខែ............ឆ្នាំ២០២...</p>
+                  <p className="font-bold uppercase mt-1">នាយកសាលាបឋមសិក្សា</p>
+                  <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា និងត្រា)</p>
+                  <div className="h-16"></div>
+                  <p className="pt-2 border-t border-slate-300 w-36 mx-auto font-bold text-slate-900">
+                    ...................................
+                  </p>
                 </div>
 
-                <div className="space-y-12">
-                  <div>
-                    <p>ថ្ងៃ................ ខែ........... ឆ្នាំ២០២៦</p>
-                    <p className="mt-0.5">គ្រូបន្ទុកថ្នាក់</p>
-                  </div>
-                  <p>...................................................</p>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-normal text-slate-700">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២...</p>
+                  <p className="font-bold uppercase mt-1">គ្រូបង្រៀនបន្ទុកថ្នាក់</p>
+                  <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា)</p>
+                  <div className="h-16"></div>
+                  <p className="pt-2 border-t border-slate-300 w-36 mx-auto font-bold text-slate-900">
+                    {schoolInfo?.teacherName || '...................................'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1185,6 +1193,7 @@ ${currentAppUrl}`;
               
               {/* MoEYS Official Kingdom Header for Print */}
               <OfficialPrintHeader
+                schoolInfo={schoolInfo}
                 printConfig={officePrintConfig}
                 title={worksheet.title}
                 subTitle1={`កម្រិតថ្នាក់៖ ${lesson.grade} | មុខវិជ្ជា៖ ${lesson.subject} | ឆ្នាំសិក្សា ២០២៦ - ២០២៧`}
@@ -1262,20 +1271,25 @@ ${currentAppUrl}`;
 
               {/* Signature Sign-off Block for Print */}
               <div className="pt-8 border-t border-slate-300 mt-8 grid grid-cols-2 text-center text-xs text-slate-900 font-bold signature-block">
-                <div className="space-y-12">
-                  <div>
-                    <p>បានឃើញ និងឯកភាព</p>
-                    <p className="uppercase mt-0.5">នាយកសាលាបឋមសិក្សា</p>
-                  </div>
-                  <p>...................................................</p>
+                <div className="space-y-1">
+                  <p className="font-bold">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+                  <p className="text-[11px] font-normal text-slate-700">ថ្ងៃ..................ខែ............ឆ្នាំ២០២...</p>
+                  <p className="font-bold uppercase mt-1">នាយកសាលាបឋមសិក្សា</p>
+                  <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា និងត្រា)</p>
+                  <div className="h-16"></div>
+                  <p className="pt-2 border-t border-slate-300 w-36 mx-auto font-bold text-slate-900">
+                    ...................................
+                  </p>
                 </div>
 
-                <div className="space-y-12">
-                  <div>
-                    <p>ថ្ងៃ................ ខែ........... ឆ្នាំ២០២៦</p>
-                    <p className="mt-0.5">គ្រូបន្ទុកថ្នាក់</p>
-                  </div>
-                  <p>...................................................</p>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-normal text-slate-700">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២...</p>
+                  <p className="font-bold uppercase mt-1">គ្រូបង្រៀនបន្ទុកថ្នាក់</p>
+                  <p className="text-[10px] font-normal italic text-slate-500">(ហត្ថលេខា)</p>
+                  <div className="h-16"></div>
+                  <p className="pt-2 border-t border-slate-300 w-36 mx-auto font-bold text-slate-900">
+                    {schoolInfo?.teacherName || '...................................'}
+                  </p>
                 </div>
               </div>
             </div>

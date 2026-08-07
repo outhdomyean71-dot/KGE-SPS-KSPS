@@ -631,6 +631,7 @@ export default function App() {
         lesson={selectedLessonForAI}
         isOpen={isAIModalOpen}
         onClose={() => setIsAIModalOpen(false)}
+        schoolInfo={schoolInfo}
       />
 
       <LessonDetailModal

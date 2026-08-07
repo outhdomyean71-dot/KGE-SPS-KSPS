@@ -1,5 +1,5 @@
 import PptxGenJS from 'pptxgenjs';
-import { FiveStepLessonPlan, StudentWorksheet, LessonPlan } from '../types';
+import { FiveStepLessonPlan, StudentWorksheet, LessonPlan, SchoolInfo } from '../types';
 import { SOVANNAPHUMI_LOGO_DATA_URL } from '../assets/sovannaphumiLogo';
 
 /**
@@ -117,7 +117,7 @@ export function exportToHTML(
   type: 'plan' | 'worksheet',
   planData?: FiveStepLessonPlan | null,
   worksheetData?: StudentWorksheet | null,
-  lessonInfo?: LessonPlan | null,
+  lessonInfo?: (LessonPlan & { provinceDistrict?: string; schoolName?: string }) | SchoolInfo | null,
   showAnswers: boolean = true
 ) {
   const safeTitle = title.replace(/[^\w\s\u1780-\u17FF]/g, '_') || 'Lesson_Plan';
@@ -132,8 +132,8 @@ export function exportToHTML(
         <div class="moeys-header">
           <div style="text-align: left;">
             <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">${lessonInfo?.provinceDistrict || 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ'}</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">${lessonInfo?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">${(lessonInfo as any)?.provinceDistrict || 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ'}</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">${(lessonInfo as any)?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
           </div>
           <div style="text-align: center; margin: 0 12px; flex: 0 0 auto;">
             ${logoHtml}
@@ -149,7 +149,7 @@ export function exportToHTML(
           <div><strong>កម្រិតថ្នាក់៖</strong> ${planData.grade}</div>
           <div><strong>មុខវិជ្ជា៖</strong> ${planData.subject}</div>
           <div><strong>រយៈពេល៖</strong> ${planData.duration}</div>
-          <div><strong>ខែសិក្សា៖</strong> ${lessonInfo?.monthName || '-'}</div>
+          <div><strong>ខែសិក្សា៖</strong> ${(lessonInfo as any)?.monthName || '-'}</div>
         </div>
       </div>
 
@@ -211,16 +211,19 @@ export function exportToHTML(
 
       <div class="signature-block">
         <div>
-          <p>បានឃើញ និងឯកភាព</p>
-          <p><strong>នាយកសាលាបឋមសិក្សា</strong></p>
-          <br/><br/>
-          <p>...................................................</p>
+          <p style="font-weight: bold; margin: 0; color: #0f172a;">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+          <p style="font-size: 11px; margin: 4px 0; color: #334155;">ថ្ងៃ..................ខែ............ឆ្នាំ២០២...</p>
+          <p style="font-weight: bold; margin: 4px 0 0 0; color: #0f172a;">នាយកសាលាបឋមសិក្សា</p>
+          <p style="font-size: 11px; font-style: italic; margin: 2px 0 0 0; color: #64748b;">(ហត្ថលេខា និងត្រា)</p>
+          <div style="height: 50px;"></div>
+          <p style="font-weight: bold; margin: 0; color: #0f172a;">...................................................</p>
         </div>
         <div>
-          <p>ថ្ងៃ................. ខែ........... ឆ្នាំ២០២៦</p>
-          <p><strong>គ្រូបន្ទុកថ្នាក់</strong></p>
-          <br/><br/>
-          <p>...................................................</p>
+          <p style="font-size: 11px; margin: 0; color: #334155;">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២...</p>
+          <p style="font-weight: bold; margin: 4px 0 0 0; color: #0f172a;">គ្រូបង្រៀនបន្ទុកថ្នាក់</p>
+          <p style="font-size: 11px; font-style: italic; margin: 2px 0 0 0; color: #64748b;">(ហត្ថលេខា)</p>
+          <div style="height: 50px;"></div>
+          <p style="font-weight: bold; margin: 0; color: #0f172a;">...................................................</p>
         </div>
       </div>
     `;
@@ -230,8 +233,8 @@ export function exportToHTML(
         <div class="moeys-header">
           <div style="text-align: left;">
             <p style="font-family: 'Moul', serif; font-size: 11px; margin: 0; color: #0f172a;">ក្រសួងអប់រំ យុវជន និងកីឡា</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">${lessonInfo?.provinceDistrict || 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ'}</p>
-            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">${lessonInfo?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #334155;">${(lessonInfo as any)?.provinceDistrict || 'មន្ទីរអប់រំ យុវជន និងកីឡា ខេត្តកំពង់ស្ពឺ'}</p>
+            <p style="font-weight: bold; font-size: 11px; margin: 2px 0 0 0; color: #92400e;">${(lessonInfo as any)?.schoolName || 'សាលារៀនសុវណ្ណភូមិទីតាំងកំពង់ស្ពឺ'}</p>
           </div>
           <div style="text-align: center; margin: 0 12px; flex: 0 0 auto;">
             ${logoHtml}
@@ -282,6 +285,24 @@ export function exportToHTML(
         `
           )
           .join('')}
+      </div>
+
+      <div class="signature-block">
+        <div>
+          <p style="font-weight: bold; margin: 0; color: #0f172a;">បានឃើញ និងពិនិត្យត្រឹមត្រូវ</p>
+          <p style="font-size: 11px; margin: 4px 0; color: #334155;">ថ្ងៃ..................ខែ............ឆ្នាំ២០២...</p>
+          <p style="font-weight: bold; margin: 4px 0 0 0; color: #0f172a;">នាយកសាលាបឋមសិក្សា</p>
+          <p style="font-size: 11px; font-style: italic; margin: 2px 0 0 0; color: #64748b;">(ហត្ថលេខា និងត្រា)</p>
+          <div style="height: 50px;"></div>
+          <p style="font-weight: bold; margin: 0; color: #0f172a;">...................................................</p>
+        </div>
+        <div>
+          <p style="font-size: 11px; margin: 0; color: #334155;">ថ្ងៃទី....... ខែ....... ឆ្នាំ២០២...</p>
+          <p style="font-weight: bold; margin: 4px 0 0 0; color: #0f172a;">គ្រូបង្រៀនបន្ទុកថ្នាក់</p>
+          <p style="font-size: 11px; font-style: italic; margin: 2px 0 0 0; color: #64748b;">(ហត្ថលេខា)</p>
+          <div style="height: 50px;"></div>
+          <p style="font-weight: bold; margin: 0; color: #0f172a;">...................................................</p>
+        </div>
       </div>
     `;
   }
@@ -820,10 +841,13 @@ export function printDocument(elementId: string, docTitle: string, orientation: 
     <html lang="km">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${docTitle}</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Moul&display=swap" rel="stylesheet">
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Moul&display=swap');
-
         * {
           box-sizing: border-box;
           -webkit-print-color-adjust: exact !important;
@@ -835,9 +859,9 @@ export function printDocument(elementId: string, docTitle: string, orientation: 
           color: #0f172a;
           background: #ffffff;
           margin: 0;
-          padding: 20px;
+          padding: 16px;
           line-height: 1.6;
-          font-size: 12.5px;
+          font-size: 12px;
         }
 
         .print-container {
@@ -860,13 +884,23 @@ export function printDocument(elementId: string, docTitle: string, orientation: 
           font-family: 'Moul', 'Khmer OS Muol Light', serif !important;
         }
 
-        /* Prevent ugly page breaks across tables & cards */
-        .step-card, .question-card, tr, .avoid-break, .signature-block, .section-box {
-          break-inside: avoid;
-          page-break-inside: avoid;
+        /* MoEYS Official Administrative Headers */
+        .moeys-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #0f172a;
         }
 
-        /* Table formatting */
+        /* Prevent ugly page breaks across tables, cards & signature blocks */
+        .step-card, .question-card, tr, .avoid-break, .signature-block, .section-box {
+          break-inside: avoid !important;
+          page-break-inside: avoid !important;
+        }
+
+        /* Table formatting according to MoEYS standards */
         table {
           width: 100%;
           border-collapse: collapse;
@@ -878,7 +912,7 @@ export function printDocument(elementId: string, docTitle: string, orientation: 
         }
 
         th, td {
-          border: 1px solid #1e293b;
+          border: 1px solid #0f172a !important;
           padding: 6px 8px;
           text-align: left;
           vertical-align: top;
@@ -887,39 +921,17 @@ export function printDocument(elementId: string, docTitle: string, orientation: 
 
         th {
           background-color: #f1f5f9 !important;
-          color: #0f172a;
+          color: #0f172a !important;
           font-weight: 700;
         }
 
-        /* MoEYS Kingdom Header Alignment */
-        .moeys-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 16px;
-          padding-bottom: 12px;
-          border-bottom: 2px solid #0f172a;
-        }
-
-        /* Card and Grid Helpers */
-        .grid { display: grid; }
-        .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-        .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .gap-2 { gap: 8px; }
-        .gap-3 { gap: 12px; }
-        .gap-4 { gap: 16px; }
-
-        .p-2 { padding: 8px; }
-        .p-3 { padding: 12px; }
-        .p-4 { padding: 16px; }
-        .rounded-lg { border-radius: 8px; }
-        .rounded-xl { border-radius: 12px; }
-        .border { border: 1px solid #cbd5e1; }
+        /* Background Colors for Print */
         .bg-amber-50 { background-color: #fffbeb !important; }
         .bg-blue-50 { background-color: #eff6ff !important; }
         .bg-emerald-50 { background-color: #ecfdf5 !important; }
         .bg-purple-50 { background-color: #faf5ff !important; }
+        .bg-teal-50 { background-color: #f0fdfa !important; }
+        .bg-indigo-50 { background-color: #eef2ff !important; }
         .bg-slate-50 { background-color: #f8fafc !important; }
         .bg-slate-100 { background-color: #f1f5f9 !important; }
 
@@ -938,20 +950,23 @@ export function printDocument(elementId: string, docTitle: string, orientation: 
           }
         }
       </style>
-      <link rel="stylesheet" href="/src/index.css">
     </head>
     <body>
       <div class="print-container">
         ${clonedContent.innerHTML}
       </div>
       <script>
-        // Wait for fonts to load before printing
-        document.fonts.ready.then(() => {
+        function runPrint() {
           setTimeout(() => {
             window.print();
             window.close();
-          }, 350);
-        });
+          }, 600);
+        }
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(runPrint);
+        } else {
+          window.onload = runPrint;
+        }
       </script>
     </body>
     </html>
